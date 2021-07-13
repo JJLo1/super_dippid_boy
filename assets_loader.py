@@ -7,7 +7,7 @@ class SoundHandler:
     Resource handling class for the game music and all sounds. Loads all defined sound assets on initialization.
     """
 
-    sound_assets = [""]
+    sound_assets = ["mysterious_harp.mp3"]
     sound_dict = dict()
 
     def __init__(self, assets_folder="assets"):
@@ -37,7 +37,7 @@ class ImageHandler:
     Resource handling class for all the images used in the game. Loads all defined image assets on initialization.
     """
 
-    image_assets = ["", ]
+    image_assets = ["slime.png", "slime-move.png"]
     image_dict = dict()
     assets_folder = "assets"
 

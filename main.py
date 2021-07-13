@@ -29,6 +29,7 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self.sound_handler = sound_handler
         self.image, self.rect = image_handler.get_image(sprite_name)  # load the sprite for this game object
         self.is_jumping = False
+        self.move_speed = 2.5
 
         self._set_initial_position()
 
@@ -46,10 +47,11 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self._check_collisions()
 
     def _move(self):
-        new_position = self.rect.move((5, 0))
+        new_position = self.rect.move((self.move_speed, 0))
         if not self.area.contains(new_position):
             if self.rect.left < self.area.left or self.rect.right > self.area.right:
-                new_position = self.rect.move(self._initial_pos)
+                self.move_speed *= -1  # invert movement
+                new_position = self.rect.move((self.move_speed, 0))
 
         self.rect = new_position
 
@@ -75,17 +77,10 @@ def setup_game():
     # pygame.mouse.set_visible(False)
 
     # setup background
-    background_image, background_rect = ImageHandler.load_background_image("")
-    # background = pygame.Surface(screen.get_size())
-    # background = background_image.convert()
-    # background.fill((250, 250, 250))  # fill background white
-
+    background_image, background_rect = ImageHandler.load_background_image("forest_background.png")
     # scale background to fill entire background (this does not preserve the original image dimensions!)
     w, h = screen.get_size()
     background = pygame.transform.scale(background_image, [int(w), int(h)])
-
-    # w, h = background.get_size()
-    # screen = pygame.display.set_mode((w, h))
 
     return screen, background
 
@@ -106,9 +101,9 @@ def main():
 
     sound_handler = SoundHandler()
     image_handler = ImageHandler()
-    # sound_handler.play_sound("house_lo.wav")  # start playing background music
+    sound_handler.play_sound("mysterious_harp.mp3")  # start playing background music
 
-    slime = SlimeCharacter(image_handler, sound_handler, sprite_name="")
+    slime = SlimeCharacter(image_handler, sound_handler, sprite_name="slime.png")
     game_object_sprite = pygame.sprite.RenderPlain(slime)
     game_objects = [game_object_sprite]
 
