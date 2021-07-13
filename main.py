@@ -29,7 +29,7 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self.sound_handler = sound_handler
         self.image, self.rect = image_handler.get_image(sprite_name)  # load the sprite for this game object
         self.is_jumping = False
-        self.move_speed = 2.5
+        self.move_speed = 0.0
 
         self._set_initial_position()
 
@@ -82,7 +82,7 @@ def setup_game():
     w, h = screen.get_size()
     background = pygame.transform.scale(background_image, [int(w), int(h)])
 
-    return screen, background
+    return screen, background, background_rect
 
 
 def show_initial_scene(screen, background):
@@ -96,8 +96,9 @@ def show_initial_scene(screen, background):
 
 def main():
     pygame.init()  # setup and initialize pygame
-    screen, background = setup_game()
+    screen, background, background_rect = setup_game()
     background_width, background_height = background.get_size()
+    background_area = (0, 10, background_width, background_height)  # cut off 10 pixels at the top of the background
 
     sound_handler = SoundHandler()
     image_handler = ImageHandler()
@@ -132,12 +133,24 @@ def main():
                 # slime.play_character_sound("")
                 pass
 
-        # draw the current scene
-        # erase everything from previous frame (quite inefficient!)
-        screen.blit(background, (0, 0), (0, 10, background_width, background_height))  # cut off 10 pixels at the top
+        # draw background and  (erases everything from previous frame (quite inefficient!))
+        screen.blit(background, background_rect, area=background_area)
         # more efficient:
         # [screen.blit(background, sprite.rect, sprite.rect) for game_object_group in game_objects for sprite
         #  in game_object_group.sprites()]
+
+        # the new position of the upcoming background is calculated by simply moving the rect by the width of the image
+        # upcoming image is the same as the current one, just offset to the right
+        upcoming_background = background_rect.move(background_rect.width, 0)
+        screen.blit(background, upcoming_background, area=background_area)
+
+        # move the background position rect to get a scrolling background
+        background_rect.move_ip(-1.5, 0)
+
+        # it the right edge of the "left" image is zero, that means it's fully out of view
+        if background_rect.right == 0:
+            # so reset the rect and start over
+            background_rect.x = 0
 
         for sprite in game_objects:
             sprite.update()
