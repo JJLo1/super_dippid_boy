@@ -102,7 +102,8 @@ def main():
 
     sound_handler = SoundHandler()
     image_handler = ImageHandler()
-    sound_handler.play_sound("mysterious_harp.mp3")  # start playing background music
+    # TODO make sure the transition at the end when replaying is smooth!
+    sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
 
     slime = SlimeCharacter(image_handler, sound_handler, sprite_name="slime.png")
     game_object_sprite = pygame.sprite.RenderPlain(slime)

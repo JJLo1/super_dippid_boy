@@ -27,9 +27,9 @@ class SoundHandler:
                 print('Cannot load sound:', fullname)
                 raise SystemExit(message)
 
-    def play_sound(self, sound_name: str):
+    def play_sound(self, sound_name: str, play_infinite=False):
         sound = self.sound_dict.get(sound_name)  # TODO error handling
-        sound.play()
+        sound.play(-1) if play_infinite else sound.play()
 
 
 class ImageHandler:
