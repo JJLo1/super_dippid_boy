@@ -29,7 +29,8 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self.sound_handler = sound_handler
         self.image, self.rect = image_handler.get_image(sprite_name)  # load the sprite for this game object
         self.is_jumping = False
-        self.move_speed = 0.0
+        self.movement_x = 0.0
+        self.movement_y = 0.0
 
         self._set_initial_position()
 
@@ -47,11 +48,11 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self._check_collisions()
 
     def _move(self):
-        new_position = self.rect.move((self.move_speed, 0))
+        new_position = self.rect.move((self.movement_x, self.movement_y))
         if not self.area.contains(new_position):
             if self.rect.left < self.area.left or self.rect.right > self.area.right:
-                self.move_speed *= -1  # invert movement
-                new_position = self.rect.move((self.move_speed, 0))
+                self.movement_x *= -1  # invert movement
+                new_position = self.rect.move((self.movement_x, self.movement_y))
 
         self.rect = new_position
 
@@ -61,9 +62,20 @@ class SlimeCharacter(pygame.sprite.Sprite):
     def play_character_sound(self, sound_name: str):
         self.sound_handler.play_sound(sound_name)
 
-    def jump(self):
-        self.is_jumping = True
-        # TODO
+    def _set_movement(self, new_movement):
+        self.movement_x, self.movement_y = new_movement
+
+    def change_movement(self, angle):
+        if angle > 5:
+            self._set_movement((1, -3))  # go up (negative as the y-axis is inverted!)
+        elif angle > 0:
+            self._set_movement((0, -1))
+        elif angle == 0:
+            self._set_movement((0, 0))
+        elif angle < -5:
+            self._set_movement((1, 3))
+        elif angle < 0:
+            self._set_movement((0, 1))
 
 
 def end_game():
@@ -125,14 +137,34 @@ def main():
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
-            elif event.type == KEYDOWN and event.key == K_ESCAPE:
-                running = False
+            elif event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    running = False
+                elif event.key == K_w:
+                    slime.change_movement(angle=2)
+                elif event.key == K_s:
+                    slime.change_movement(angle=-2)
+            elif event.type == KEYUP:
+                if event.key == pygame.K_w or event.key == pygame.K_s:
+                    slime.change_movement(angle=0)
             elif event.type == MOUSEBUTTONDOWN:
-                slime.jump()
+                if event.button == 1:
+                    print("You pressed the left mouse button")
+                    # TODO start drawing gesture
+                elif event.button == 3:
+                    print("You pressed the right mouse button")
+
+                pos = pygame.mouse.get_pos()
+                print("Clicked at ", pos)
             elif event.type == MOUSEBUTTONUP:
-                # TODO
-                # slime.play_character_sound("")
+                # TODO gesture finished
                 pass
+
+        keys = pygame.key.get_pressed()  # checking pressed keys
+        if keys[pygame.K_w]:
+            slime.change_movement(angle=10)
+        elif keys[pygame.K_s]:
+            slime.change_movement(angle=-10)
 
         # draw background and  (erases everything from previous frame (quite inefficient!))
         screen.blit(background, background_rect, area=background_area)
