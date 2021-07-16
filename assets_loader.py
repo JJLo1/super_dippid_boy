@@ -37,7 +37,7 @@ class ImageHandler:
     Resource handling class for all the images used in the game. Loads all defined image assets on initialization.
     """
 
-    image_assets = ["slime.png", "slime-move.png"]
+    image_assets = ["slime.png", "slime-move.png", "wooden_material.png", "portal.png"]
     image_dict = dict()
     assets_folder = "assets"
 
@@ -65,8 +65,9 @@ class ImageHandler:
                 raise SystemExit(message)
 
     @staticmethod
-    def load_background_image(name):
-        fullname = os.path.join(ImageHandler.assets_folder, name)
+    def load_background_image():
+        background_image = "forest_background.png"
+        fullname = os.path.join(ImageHandler.assets_folder, background_image)
         try:
             image = pygame.image.load(fullname)
             if image.get_alpha() is None:
