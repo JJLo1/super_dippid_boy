@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
+import os
 
 import pygame
 from pygame.locals import *  # optional, puts a set of constants and functions into the global namespace of this script
+from DIPPID import SensorUDP
 from assets_loader import ImageHandler, SoundHandler
 
 # check imports
@@ -23,29 +25,64 @@ class SlimeCharacter(pygame.sprite.Sprite):
     The main character of the game.
     """
 
-    def __init__(self, image_handler, sound_handler, sprite_name):
+    def __init__(self, image_handler, sound_handler, graphics_folder):
         pygame.sprite.Sprite.__init__(self)  # call Sprite initializer
 
         self.sound_handler = sound_handler
-        self.image, self.rect = image_handler.get_image(sprite_name)  # load the sprite for this game object
+        self.image_handler = image_handler
+        self.character_images = []
+        self.load_images(graphics_folder)
+        print(self.character_images[1])
+        self.original_image = self.character_images[0]
+        self.rect = self.original_image.get_rect()# load the sprite for this game object
+        #self.original_image =  pygame.transform.flip(self.original_image,True,False)
+        self.image = self.original_image
         self.is_jumping = False
         self.movement_x = 0.0
         self.movement_y = 0.0
+        self.rot = 0
+        self.current_image_index = 0
+
 
         self._set_initial_position()
+
+    def load_images(self, directory):
+        for filename in os.listdir(directory):
+            image = pygame.image.load(f"{directory}/{filename}")
+            image = pygame.transform.scale(image,(50, 50))
+            self.character_images.append(image)
+
+
 
     def _set_initial_position(self):
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         # self.image = pygame.transform.rotate(self.image, 180)
-        self._initial_pos = (self.area.left + 25, self.area.bottom - 100)
+        self._initial_pos = (self.area.left + 100, self.area.bottom/2)
         self.rect.topleft = self._initial_pos
 
     def update(self):
         # perform per-frame changes on the game object
         # TODO if not self.is_jumping:
+        self.animate_character()
         self._move()
         self._check_collisions()
+        self._update_rotation()
+
+
+    def animate_character(self):
+        if(self.current_image_index > len(self.character_images)-1):
+            self.current_image_index = 0
+        self.image = self.character_images[self.current_image_index]
+        self.current_image_index +=1
+
+    def _update_rotation(self):
+        self.rot = (self.rect.bottom / self.area.bottom)*180+180  # bei 0 = 1  bei self.area.bottom = -1   self.bottom/2 0
+        print(self.rot)
+        new_image = pygame.transform.rotate(self.image, self.rot)
+        new_rect = self.rect.copy()
+        new_rect.center = self.rect.center
+        self.image, self.rect = (new_image, new_rect)
 
     def _move(self):
         new_position = self.rect.move((self.movement_x, self.movement_y))
@@ -53,7 +90,6 @@ class SlimeCharacter(pygame.sprite.Sprite):
             if self.rect.left < self.area.left or self.rect.right > self.area.right:
                 self.movement_x *= -1  # invert movement
                 new_position = self.rect.move((self.movement_x, self.movement_y))
-
         self.rect = new_position
 
     def _check_collisions(self):
@@ -66,16 +102,19 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self.movement_x, self.movement_y = new_movement
 
     def change_movement(self, angle):
-        if angle > 5:
-            self._set_movement((1, -3))  # go up (negative as the y-axis is inverted!)
+        self._set_movement((0, angle))
+    ''' if angle > 5:
+            self._set_movement((0, -3))  # go up (negative as the y-axis is inverted!)
         elif angle > 0:
             self._set_movement((0, -1))
         elif angle == 0:
             self._set_movement((0, 0))
         elif angle < -5:
-            self._set_movement((1, 3))
+            self._set_movement((0, 3))
         elif angle < 0:
             self._set_movement((0, 1))
+    '''
+
 
 
 def end_game():
@@ -107,6 +146,8 @@ def show_initial_scene(screen, background):
 
 
 def main():
+
+    dippid = SensorUDP(5700)
     pygame.init()  # setup and initialize pygame
     screen, background, background_rect = setup_game()
     background_width, background_height = background.get_size()
@@ -117,7 +158,7 @@ def main():
     # TODO make sure the transition at the end when replaying is smooth!
     sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
 
-    slime = SlimeCharacter(image_handler, sound_handler, sprite_name="slime.png")
+    slime = SlimeCharacter(image_handler, sound_handler, graphics_folder="graphics/triangle")
     game_object_sprite = pygame.sprite.RenderPlain(slime)
     game_objects = [game_object_sprite]
 
@@ -140,13 +181,6 @@ def main():
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     running = False
-                elif event.key == K_w:
-                    slime.change_movement(angle=2)
-                elif event.key == K_s:
-                    slime.change_movement(angle=-2)
-            elif event.type == KEYUP:
-                if event.key == pygame.K_w or event.key == pygame.K_s:
-                    slime.change_movement(angle=0)
             elif event.type == MOUSEBUTTONDOWN:
                 if event.button == 1:
                     print("You pressed the left mouse button")
@@ -161,10 +195,8 @@ def main():
                 pass
 
         keys = pygame.key.get_pressed()  # checking pressed keys
-        if keys[pygame.K_w]:
-            slime.change_movement(angle=10)
-        elif keys[pygame.K_s]:
-            slime.change_movement(angle=-10)
+        slime.change_movement(angle=dippid.get_value('gravity')['x'])
+
 
         # draw background and  (erases everything from previous frame (quite inefficient!))
         screen.blit(background, background_rect, area=background_area)
