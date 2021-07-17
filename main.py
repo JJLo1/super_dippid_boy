@@ -173,12 +173,15 @@ def main():
     INCREASE_SPEED_EVENT = pygame.USEREVENT + 2
     pygame.time.set_timer(INCREASE_SPEED_EVENT, 10000)  # increase speed every 10 seconds
 
+    UPDATE_SCORE_EVENT = pygame.USEREVENT + 3
+    pygame.time.set_timer(UPDATE_SCORE_EVENT, 1000)  # update score each second
+
     # Clock object used to help control the game's framerate. Used in the main loop to make sure the game doesn't run
     # too fast
     clock = pygame.time.Clock()
 
     font = pygame.font.Font(None, 25)  # TODO show the current point score on the screen
-    fps_text_pos = (20, 20)
+    current_points = 0
 
     show_initial_scene(screen, background)
 
@@ -226,9 +229,19 @@ def main():
                 wall_collidables.add(*new_obstacle.walls)
                 gate_collidables.add(*new_obstacle.gates)
 
-                background.blit(text, fps_text_pos)
+            elif event.type == UPDATE_SCORE_EVENT:
+                current_points += 5
 
         main_character.change_movement(angle=dippid.get_value('gravity')['x'])
+        """
+        # alternative:
+        if dippid.get_value('gravity')['y'] > 1:
+            main_character.change_movement(angle=5)
+        elif dippid.get_value('gravity')['y'] < -1:
+            main_character.change_movement(angle=-5)
+        else:
+            main_character.change_movement(angle=0)
+        """
 
         keys = pygame.key.get_pressed()  # checking pressed keys
         if keys[pygame.K_w]:
@@ -269,6 +282,9 @@ def main():
         main_character.update()
         screen.blit(main_character.image, main_character.rect)
 
+        text_surface = font.render(f"Score: {current_points}", True, (255, 0, 0))
+        screen.blit(text_surface, (SCREEN_WIDTH // 2 - 50, 15))
+
         # Check if any obstacles have collided with the player
         if pygame.sprite.spritecollideany(main_character, wall_collidables):
             # If so, then remove the player and stop the loop
@@ -285,6 +301,8 @@ def main():
             print("Current player form does not match gate type! Point deduction!")
             # main_character.kill()  # TODO maybe don't kill when wrong form but only decrease points ?
             # running = False
+
+            current_points -= 20  # FIXME this is executed 60 times per second
 
         # Flip the contents of pygame's software double buffer to the screen.
         # This makes everything we've drawn visible all at once.
