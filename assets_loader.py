@@ -65,7 +65,7 @@ class ImageHandler:
                 raise SystemExit(message)
 
     @staticmethod
-    def get_images_from_directory(self, directory):
+    def get_images_from_directory(directory):
         image_list = []
         for filename in os.listdir(directory):
             image = pygame.image.load(os.path.join(directory, filename))
