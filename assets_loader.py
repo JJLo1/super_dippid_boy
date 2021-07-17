@@ -65,6 +65,15 @@ class ImageHandler:
                 raise SystemExit(message)
 
     @staticmethod
+    def get_images_from_directory(directory):
+        image_list = []
+        for filename in os.listdir(directory):
+            image = pygame.image.load(os.path.join(directory, filename))
+            image = pygame.transform.scale(image, (50, 50))
+            image_list.append(image)
+        return image_list
+
+    @staticmethod
     def load_background_image():
         background_image = "forest_background.png"
         fullname = os.path.join(ImageHandler.assets_folder, background_image)

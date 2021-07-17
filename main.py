@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
 
+import os
 import random
+from DIPPID import SensorUDP
 from assets_loader import ImageHandler, SoundHandler
 from obstacle import Obstacle, SharedObstacleState
 from game_constants import *
@@ -35,27 +37,58 @@ class SlimeCharacter(pygame.sprite.Sprite):
     The main character of the game.
     """
 
-    def __init__(self, image_handler, sound_handler, sprite_name):
+    def __init__(self, image_handler, sound_handler, graphics_folder):
         pygame.sprite.Sprite.__init__(self)  # call Sprite initializer
         self.sound_handler = sound_handler
         self.image, self.rect = image_handler.get_image(sprite_name)  # load the sprite for this game object
+        self.image_handler = image_handler
+        self.character_images = ImageHandler.get_images_from_directory(graphics_folder)
+        self.original_image = self.character_images[0]
+        self.rect = self.original_image.get_rect()# load the sprite for this game object
+        #self.original_image =  pygame.transform.flip(self.original_image,True,False)
+        self.image = self.original_image
+        self.is_jumping = False
         self.movement_x = 0.0
         self.movement_y = 0.0
-
+        self.rot = 0
+        self.current_image_index = 0
         self._set_initial_position()
 
     def _set_initial_position(self):
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         # self.image = pygame.transform.rotate(self.image, 180)
-        self._initial_pos = (self.area.left + 25, self.area.bottom - 100)
+        self._initial_pos = (self.area.left + 100, self.area.bottom/2)
         self.rect.topleft = self._initial_pos
 
     def update(self):
         # perform per-frame changes on the game object
+        self.animate_character()
         self._move()
+        self._update_rotation()
+
+    def animate_character(self):
+        if(self.current_image_index > len(self.character_images)-1):
+            self.current_image_index = 0
+        self.image = self.character_images[self.current_image_index]
+        self.current_image_index +=1
+
+    def _update_rotation(self):
+        self.rot = (self.rect.bottom / self.area.bottom)*180+180  # bei 0 = 1  bei self.area.bottom = -1   self.bottom/2 0
+        print(self.rot)
+        new_image = pygame.transform.rotate(self.image, self.rot)
+        new_rect = self.rect.copy()
+        new_rect.center = self.rect.center
+        self.image, self.rect = (new_image, new_rect)
 
     def _move(self):
+        new_position = self.rect.move((self.movement_x, self.movement_y))
+        if not self.area.contains(new_position):
+            if self.rect.left < self.area.left or self.rect.right > self.area.right:
+                self.movement_x *= -1  # invert movement
+                new_position = self.rect.move((self.movement_x, self.movement_y))
+        self.rect = new_position
+
         self.rect.move_ip((self.movement_x, self.movement_y))  # 'ip' makes the changes happen 'in-place'
         """
         if self.rect.left < 0:
@@ -80,16 +113,19 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self.movement_x, self.movement_y = new_movement
 
     def change_movement(self, angle):
-        if angle > 5:
-            self._set_movement((0, -5))  # go up (negative as the y-axis is inverted!)
+        self._set_movement((0, angle))
+    ''' if angle > 5:
+            self._set_movement((0, -3))  # go up (negative as the y-axis is inverted!)
         elif angle > 0:
             self._set_movement((0, -1))
         elif angle == 0:
             self._set_movement((0, 0))
         elif angle < -5:
-            self._set_movement((0, 5))
+            self._set_movement((0, 3))
         elif angle < 0:
             self._set_movement((0, 1))
+    '''
+
 
 
 def end_game():
@@ -131,6 +167,8 @@ def show_initial_scene(screen, background):
 
 # TODO this main method is far too long -> extract most of it to a main class, e.g. "Game", as in the Praxisseminar
 def main():
+
+    dippid = SensorUDP(5700)
     pygame.init()  # setup and initialize pygame
     screen, background, background_rect = setup_game()
     background_width, background_height = background.get_size()
@@ -141,7 +179,7 @@ def main():
     # TODO make sure the transition at the end when replaying is smooth!
     sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
 
-    main_character = SlimeCharacter(image_handler, sound_handler, sprite_name="slime.png")
+    main_character = SlimeCharacter(image_handler, sound_handler, graphics_folder="graphics/triangle")
     obstacles = pygame.sprite.Group()  # for rendering all obstacles
     wall_collidables = pygame.sprite.Group()  # for collision detection
     gate_collidables = pygame.sprite.Group()
@@ -216,10 +254,13 @@ def main():
                 background.blit(text, fps_text_pos)
 
         keys = pygame.key.get_pressed()  # checking pressed keys
+        slime.change_movement(angle=dippid.get_value('gravity')['x'])
+        """
         if keys[pygame.K_w]:
             main_character.change_movement(angle=10)
         elif keys[pygame.K_s]:
             main_character.change_movement(angle=-10)
+        """
 
         # draw background (erases everything from previous frame (quite inefficient!))
         screen.blit(background, background_rect, area=background_area)
