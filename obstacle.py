@@ -4,6 +4,17 @@ from enum import Enum
 from game_constants import SCREEN_HEIGHT
 
 
+class SharedObstacleState:
+    # The obstacle speed needs to be updated for the obstacle class as well as the wall and gate classes at the
+    # same time and letting Gate and Wall inherit from Obstacle would violate the Liskov substitution principle.
+    # Because of this the 'SharedObstacleState' class acts as a "state-holder" that mediates shared states.
+    obstacle_move_speed = 3.5
+
+    @classmethod
+    def increase_move_speed(cls):
+        cls.obstacle_move_speed += 0.5  # TODO probably too much, 0.2 instead?
+
+
 class GateType(Enum):
     CIRCLE = "circle"
     LINE = "line"
@@ -27,17 +38,16 @@ class GateType(Enum):
             return "portal.png"
 
 
-class Gate(pygame.sprite.Sprite):
-    def __init__(self, image_handler, x_pos, y_pos, width, height, move_speed, gate_type: GateType):
+class Gate(pygame.sprite.Sprite, SharedObstacleState):
+    def __init__(self, image_handler, x_pos, y_pos, width, height, gate_type: GateType):
         pygame.sprite.Sprite.__init__(self)
-        self.speed = move_speed
         self.gate_type = gate_type
 
         sprite_name = GateType.get_sprite_for_gate_type(gate_type)
         self.image, image_rect = image_handler.get_image(sprite_name)
         self.rect = image_rect.copy()  # TODO or simply use get_rect()
         self.image = pygame.transform.smoothscale(self.image, [int(width), int(height)])
-        # set position
+        # set initial position
         self.rect.topleft = (x_pos, y_pos)
         self.rect.width = width
         self.rect.height = height
@@ -46,31 +56,30 @@ class Gate(pygame.sprite.Sprite):
         return self.gate_type
 
     def update(self):
-        self.rect.move_ip(self.speed, 0)
+        self.rect.move_ip(-self.obstacle_move_speed, 0)
         if self.rect.right < 0:
             self.kill()
 
 
-class Wall(pygame.sprite.Sprite):
-    def __init__(self, image_handler, x_pos, y_pos, width, height, move_speed):
+class Wall(pygame.sprite.Sprite, SharedObstacleState):
+    def __init__(self, image_handler, x_pos, y_pos, width, height):
         pygame.sprite.Sprite.__init__(self)
-        self.speed = move_speed
 
         self.image, image_rect = image_handler.get_image("wooden_material.png")
         self.rect = image_rect.copy()  # make a local copy so we don't change the reference!
         self.image = pygame.transform.smoothscale(self.image, [int(width), int(height)])
-        # set position
+        # set initial position
         self.rect.topleft = (x_pos, y_pos)
         self.rect.width = width
         self.rect.height = height
 
     def update(self):
-        self.rect.move_ip(self.speed, 0)
+        self.rect.move_ip(-self.obstacle_move_speed, 0)
         if self.rect.right < 0:
-            self.kill()  # kill automatically removes this sprite from every sprite group it currently belongs to
+            self.kill()  # kill() automatically removes this sprite from every sprite group it currently belongs to
 
 
-class Obstacle(pygame.sprite.Sprite):
+class Obstacle(pygame.sprite.Sprite, SharedObstacleState):
     """
     A container class for all obstacles in the game.
     """
@@ -85,7 +94,6 @@ class Obstacle(pygame.sprite.Sprite):
         self.number_of_walls = 0
         self.number_of_gates = 0
         self.number_of_passages = 0
-        self.move_speed = -3.5  # TODO increase this (and the obstacle spawn time) slightly when the game progresses
 
         # list of all "wall-like" parts of the obstacle that must be avoided by the player
         self.walls = pygame.sprite.Group()
@@ -95,7 +103,6 @@ class Obstacle(pygame.sprite.Sprite):
         self._create_obstacle()
 
     def _create_obstacle(self):
-        print("\n#######################\n")
         self._generate_random_parts()
         # small sanity check for the creation logic
         if self.number_of_passages > 0:
@@ -127,8 +134,7 @@ class Obstacle(pygame.sprite.Sprite):
         self.last_y = self.top_border
         for element in part_order:
             if element == "w":
-                new_wall = Wall(self.image_handler, self.x_pos, self.last_y, self.obstacle_width, wall_height,
-                                self.move_speed)
+                new_wall = Wall(self.image_handler, self.x_pos, self.last_y, self.obstacle_width, wall_height)
                 self.walls.add(new_wall)
                 self.last_y = self.last_y + wall_height
             elif element == "g":
@@ -136,7 +142,7 @@ class Obstacle(pygame.sprite.Sprite):
 
                 gate_type = random.choice(GateType.values())  # get a random gate type
                 new_gate = Gate(self.image_handler, self.x_pos, self.last_y, self.obstacle_width, gate_height,
-                                self.move_speed, gate_type=gate_type)
+                                gate_type=gate_type)
                 self.gates.add(new_gate)
                 self.last_y = self.last_y + gate_height
             elif element == "p":
@@ -169,9 +175,9 @@ class Obstacle(pygame.sprite.Sprite):
 
     def _generate_random_parts(self):
         self.number_of_walls = random.randint(1, 3)  # generate a random number of walls between 1 and 3 (inclusive)
-        print(f"Number of walls: {self.number_of_walls}")
+        # print(f"Number of walls: {self.number_of_walls}")
         self.number_of_gates = self._get_number_of_gates(self.number_of_walls)
-        print(f"Number of gates: {self.number_of_gates}")
+        # print(f"Number of gates: {self.number_of_gates}")
         if self.number_of_gates == 0:
             # if there are no gates there must be some other passages where the user can go through
             self.number_of_passages = random.randint(1, 2)  # more than two passages aren't needed
@@ -191,19 +197,14 @@ class Obstacle(pygame.sprite.Sprite):
             return random.randint(0, 3)
 
     def update(self):
-        # self.x_pos += self.move_speed  # += as move speed is negative!
         for sprite_group in [self.walls, self.gates]:
             sprite_group.update()
 
-        # first_wall = self.walls.sprites()[0]  # safe because we always have at least one wall
-        # self.x_pos = first_wall.rect.right
-
-        self.rect.move_ip((self.move_speed, 0))
+        self.rect.move_ip((-self.obstacle_move_speed, 0))
 
         if self.rect.right < 0:
-            print(f"Obstacle passed out left: len walls: {len(self.walls)}, len_gates: {len(self.gates)}")
+            # print(f"Obstacle passed out left: len walls: {len(self.walls)}, len_gates: {len(self.gates)}")
             # remove all sprites first before killing the container
-            # TODO does this leak memory? call kill of each sprite in the groups manually?
             # self.walls.empty()
             # self.gates.empty()
             self.kill()

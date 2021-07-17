@@ -3,7 +3,7 @@
 
 import random
 from assets_loader import ImageHandler, SoundHandler
-from obstacle import Obstacle
+from obstacle import Obstacle, SharedObstacleState
 from game_constants import *
 import pygame
 # pygame.locals puts a set of useful constants and functions into the global namespace of this script
@@ -103,7 +103,6 @@ def end_game():
 def setup_game():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))   # setup the game window
     pygame.display.set_caption(GAME_TITLE)
-    # pygame.mouse.set_visible(False)
 
     # setup background
     background_image, background_rect = ImageHandler.load_background_image()
@@ -130,6 +129,7 @@ def show_initial_scene(screen, background):
     pygame.display.flip()
 
 
+# TODO this main method is far too long -> extract most of it to a main class, e.g. "Game", as in the Praxisseminar
 def main():
     pygame.init()  # setup and initialize pygame
     screen, background, background_rect = setup_game()
@@ -152,11 +152,15 @@ def main():
     SPAWN_OBSTACLE_EVENT = pygame.USEREVENT + 1
     pygame.time.set_timer(SPAWN_OBSTACLE_EVENT, interval_time)
 
+    # create event to increase the game speed over time
+    INCREASE_SPEED_EVENT = pygame.USEREVENT + 2
+    pygame.time.set_timer(INCREASE_SPEED_EVENT, 10000)  # increase speed every 10 seconds
+
     # Clock object used to help control the game's framerate. Used in the main loop to make sure the game doesn't run
     # too fast
     clock = pygame.time.Clock()
 
-    font = pygame.font.Font(None, 25)
+    font = pygame.font.Font(None, 25)  # TODO show the current point score on the screen
     fps_text_pos = (20, 20)
 
     show_initial_scene(screen, background)
@@ -194,6 +198,8 @@ def main():
             elif event.type == MOUSEBUTTONUP:
                 # TODO gesture finished
                 pass
+            elif event.type == INCREASE_SPEED_EVENT:
+                SharedObstacleState.increase_move_speed()
             elif event.type == SPAWN_OBSTACLE_EVENT:
                 # create a new obstacle to the right of the current screen whenever our custom event is sent
                 new_obstacle = Obstacle(SCREEN_WIDTH + 20, image_handler)
@@ -245,6 +251,7 @@ def main():
         # Check if any obstacles have collided with the player
         if pygame.sprite.spritecollideany(main_character, wall_collidables):
             # If so, then remove the player and stop the loop
+            print("Player collided with wall! Game over!")
             main_character.kill()
             running = False
             # TODO show 'You Died' - Message :)
