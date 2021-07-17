@@ -73,7 +73,8 @@ class SlimeCharacter(pygame.sprite.Sprite):
             self.rect.bottom = SCREEN_HEIGHT
         """
         # make sure that the character cannot leave the game window
-        self.rect.clamp_ip(self.area)
+        # TODO the top and bottom boundaries (50, -100) are invisible at the moment
+        self.rect.clamp_ip((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 100))
 
     def _check_collisions(self):
         pass
@@ -350,13 +351,14 @@ def setup_game():
     w, h = screen.get_size()
     background = pygame.transform.smoothscale(background_image, [int(w), int(h)])
 
+    """
     top_border_block = pygame.Surface((SCREEN_WIDTH, 50), pygame.SRCALPHA)  # pygame.SRCALPHA makes it transparent
     top_border_rect = top_border_block.get_rect(topleft=(0, 0))
 
-    bottom_border_block = pygame.Surface((SCREEN_WIDTH, 50), pygame.SRCALPHA)  # TODO -50 ?
+    bottom_border_block = pygame.Surface((SCREEN_WIDTH, 50), pygame.SRCALPHA)
     bottom_border_rect = bottom_border_block.get_rect(bottomleft=(0, SCREEN_HEIGHT))
-
-    return screen, background, background_rect, top_border_rect, bottom_border_rect
+    """
+    return screen, background, background_rect  # , top_border_rect, bottom_border_rect
 
 
 def show_initial_scene(screen, background):
@@ -370,7 +372,7 @@ def show_initial_scene(screen, background):
 
 def main():
     pygame.init()  # setup and initialize pygame
-    screen, background, background_rect, top_border_rect, bottom_border_rect = setup_game()
+    screen, background, background_rect = setup_game()
     background_width, background_height = background.get_size()
     background_area = (0, 10, background_width, background_height)  # cut off 10 pixels at the top of the background
 
@@ -466,9 +468,9 @@ def main():
             # so reset the rect and start over
             background_rect.x = 0
 
-        # TODO draw blocks at all??
-        # screen.blit(background, top_border_rect)
-        # screen.blit(background, bottom_border_rect)
+        # draw top and bottom border blocks  # TODO quite ugly at the moment
+        pygame.draw.rect(screen, (24, 61, 87), (0, 0, SCREEN_WIDTH, 49))
+        pygame.draw.rect(screen, (74, 59, 43), (0, SCREEN_HEIGHT-49, SCREEN_WIDTH, 50))
 
         # text.get_rect().move_ip(-1.5, 0)
         # background.blit(text, fps_text_pos)
