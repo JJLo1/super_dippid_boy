@@ -58,7 +58,6 @@ class SlimeCharacter(pygame.sprite.Sprite):
     def update(self):
         # perform per-frame changes on the game object
         self._move()
-        self._check_collisions()
 
     def _move(self):
         self.rect.move_ip((self.movement_x, self.movement_y))  # 'ip' makes the changes happen 'in-place'
@@ -74,26 +73,26 @@ class SlimeCharacter(pygame.sprite.Sprite):
         """
         # make sure that the character cannot leave the game window
         # TODO the top and bottom boundaries (50, -100) are invisible at the moment
-        self.rect.clamp_ip((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 100))
-
-    def _check_collisions(self):
-        pass
+        self.rect.clamp_ip((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 100))  # TODO own constants class for the magic nums
 
     def play_character_sound(self, sound_name: str):
         self.sound_handler.play_sound(sound_name)
+
+    def get_current_form(self):
+        pass
 
     def _set_movement(self, new_movement):
         self.movement_x, self.movement_y = new_movement
 
     def change_movement(self, angle):
         if angle > 5:
-            self._set_movement((0, -3))  # go up (negative as the y-axis is inverted!)
+            self._set_movement((0, -5))  # go up (negative as the y-axis is inverted!)
         elif angle > 0:
             self._set_movement((0, -1))
         elif angle == 0:
             self._set_movement((0, 0))
         elif angle < -5:
-            self._set_movement((0, 3))
+            self._set_movement((0, 5))
         elif angle < 0:
             self._set_movement((0, 1))
 
@@ -126,6 +125,7 @@ class Gate(pygame.sprite.Sprite):
     def __init__(self, image_handler, x_pos, y_pos, width, height, move_speed, gate_type: GateType):
         pygame.sprite.Sprite.__init__(self)
         self.speed = move_speed
+        self.gate_type = gate_type
 
         sprite_name = get_sprite_for_gate_type(gate_type)
         self.image, image_rect = image_handler.get_image(sprite_name)
@@ -136,8 +136,13 @@ class Gate(pygame.sprite.Sprite):
         self.rect.width = width
         self.rect.height = height
 
+    def get_gate_type(self):
+        return self.gate_type
+
     def update(self):
         self.rect.move_ip(self.speed, 0)
+        if self.rect.right < 0:
+            self.kill()
 
 
 class Wall(pygame.sprite.Sprite):
@@ -155,6 +160,8 @@ class Wall(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.move_ip(self.speed, 0)
+        if self.rect.right < 0:
+            self.kill()  # kill automatically removes this sprite from every sprite group it currently belongs to
 
 
 class Obstacle(pygame.sprite.Sprite):
@@ -172,7 +179,7 @@ class Obstacle(pygame.sprite.Sprite):
         self.number_of_walls = 0
         self.number_of_gates = 0
         self.number_of_passages = 0
-        self.move_speed = -2.5
+        self.move_speed = -3.5  # TODO increase this (and the obstacle spawn time) slightly when the game progresses
 
         # list of all "wall-like" parts of the obstacle that must be avoided by the player
         self.walls = pygame.sprite.Group()
@@ -203,12 +210,12 @@ class Obstacle(pygame.sprite.Sprite):
             passage_height = random.randrange(50, 100)  # produce a pseudo random passage size
             free_space = (obstacle_area_height - passage_height * self.number_of_passages)
             wall_height = free_space / self.number_of_walls
-            print(f"free_space: {free_space}, passage_h: {passage_height}, wall_h: {wall_height}")
+            # print(f"free_space: {free_space}, passage_h: {passage_height}, wall_h: {wall_height}")
         else:
             gate_height = obstacle_area_height / (self.number_of_walls * 3 + self.number_of_gates)
             wall_height = 3 * gate_height  # walls are always 3 times as large as gates
 
-            print(f"Area: {obstacle_area_height}, gate_h: {gate_height}, wall_h: {wall_height}")
+            # print(f"Area: {obstacle_area_height}, gate_h: {gate_height}, wall_h: {wall_height}")
             # offset = 10  # 10 px offset for the gates so it looks a bit better
 
         self.last_y = self.top_border
@@ -244,22 +251,13 @@ class Obstacle(pygame.sprite.Sprite):
     def _combine_sprites(self):
         # see https://stackoverflow.com/questions/53233894/pygame-combine-sprites
         self.rect = pygame.Rect(self.x_pos, 0, self.obstacle_width, SCREEN_HEIGHT)
-        """
-        self.rect = self.walls.sprites()[0].rect.copy()
-        for sprite in self.walls.sprites()[1:]:
-            self.rect.union_ip(sprite.rect)
-        for gate_sprite in self.gates.sprites():
-            self.rect.union_ip(gate_sprite.rect)
-        """
         # Create a new transparent image with the combined size.
         self.image = pygame.Surface(self.rect.size, pygame.SRCALPHA)
         # Now blit all sprites onto the new surface.
         for sprite in self.walls.sprites():
-            print(f"WALL Pos: y:{sprite.rect.y} ({sprite.rect})")
             self.image.blit(sprite.image, (sprite.rect.x - self.rect.left,
                                            sprite.rect.y))
         for sprite in self.gates.sprites():
-            print(f"GATE Pos: y:{sprite.rect.y} ({sprite.rect})")
             self.image.blit(sprite.image, (sprite.rect.x - self.rect.left,
                                            sprite.rect.y))
 
@@ -286,28 +284,10 @@ class Obstacle(pygame.sprite.Sprite):
             # so here we simply choose between 0 and 3 gates as well for now
             return random.randint(0, 3)
 
-    """
-    def draw_at(self, game_window):
-        for wall in self.walls:
-            wall_x, wall_y, wall_width, wall_height = wall
-            wall_x = self.x_pos
-            filled_rect = pygame.Rect(wall_x, wall_y, wall_width, wall_height)
-            pygame.draw.rect(game_window, (139, 69, 19), filled_rect)
-
-        for gate in self.gates:
-            gate_x, gate_y, gate_width, gate_height = gate
-            gate_x = self.x_pos
-            pygame.draw.ellipse(game_window, (255, 0, 0), (gate_x, gate_y, gate_width, gate_height))
-
-    def draw_parts(self, surface):
-        self.walls.draw(surface)
-        self.gates.draw(surface)
-    """
-
     def update(self):
         # self.x_pos += self.move_speed  # += as move speed is negative!
-        # for sprite_group in [self.walls, self.gates]:
-        #    sprite_group.update()
+        for sprite_group in [self.walls, self.gates]:
+            sprite_group.update()
 
         # first_wall = self.walls.sprites()[0]  # safe because we always have at least one wall
         # self.x_pos = first_wall.rect.right
@@ -315,11 +295,12 @@ class Obstacle(pygame.sprite.Sprite):
         self.rect.move_ip((self.move_speed, 0))
 
         if self.rect.right < 0:
+            print(f"Obstacle passed out left: len walls: {len(self.walls)}, len_gates: {len(self.gates)}")
             # remove all sprites first before killing the container
             # TODO does this leak memory? call kill of each sprite in the groups manually?
-            self.walls.empty()
-            self.gates.empty()
-            # self.kill()
+            # self.walls.empty()
+            # self.gates.empty()
+            self.kill()
 
 
 def get_screen_center_for_surface(surface_rect):
@@ -330,6 +311,19 @@ def get_screen_center_for_surface(surface_rect):
         (SCREEN_HEIGHT - surface_rect.get_height()) / 2
     )
     return surface_center
+
+
+def check_gate_collision(player, gate):
+    # print("Player Rect: ", player.rect)
+    # print("Gate Rect: ", gate.rect)
+
+    # if gate.rect.left <= player.rect.x <= gate.rect.right:
+    if gate.rect.left == player.rect.x:  # only check once when x positions are equal
+        if gate.rect.top <= player.rect.y <= gate.rect.bottom:
+            if gate.get_gate_type() is not player.get_current_form():
+                # they collide only if the player's current form does not match the gate type
+                return True
+    return False
 
 
 def end_game():
@@ -382,8 +376,9 @@ def main():
     sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
 
     main_character = SlimeCharacter(image_handler, sound_handler, sprite_name="slime.png")
-    obstacles = pygame.sprite.Group()
-    collidables = pygame.sprite.Group()
+    obstacles = pygame.sprite.Group()  # for rendering all obstacles
+    wall_collidables = pygame.sprite.Group()  # for collision detection
+    gate_collidables = pygame.sprite.Group()
 
     # create an event timer that fires an event each time the specified amount in milliseconds passes,
     # see https://stackoverflow.com/questions/18948981/do-something-every-x-milliseconds-in-pygame
@@ -437,9 +432,9 @@ def main():
                 # create a new obstacle to the right of the current screen whenever our custom event is sent
                 new_obstacle = Obstacle(SCREEN_WIDTH + 20, image_handler)
                 obstacles.add(new_obstacle)
-                collidables.add(*new_obstacle.walls)
+                wall_collidables.add(*new_obstacle.walls)
+                gate_collidables.add(*new_obstacle.gates)
 
-                # text.get_rect().move_ip(-1.5, 0)
                 background.blit(text, fps_text_pos)
 
         keys = pygame.key.get_pressed()  # checking pressed keys
@@ -472,25 +467,30 @@ def main():
         pygame.draw.rect(screen, (24, 61, 87), (0, 0, SCREEN_WIDTH, 49))
         pygame.draw.rect(screen, (74, 59, 43), (0, SCREEN_HEIGHT-49, SCREEN_WIDTH, 50))
 
-        # text.get_rect().move_ip(-1.5, 0)
-        # background.blit(text, fps_text_pos)
-
-        """
-        for obstacle in obstacles:
-            if obstacle.x_pos < obstacle.obstacle_width * -1:  # obstacle.x_pos < 0:
-                obstacles.remove(obstacle)
-        """
         obstacles.update()
         obstacles.draw(screen)
+
+        # print(f"Number of obstacles: {len(obstacles)}")
+        # print(f"Number of walls: {len(wall_collidables)}")
 
         main_character.update()
         screen.blit(main_character.image, main_character.rect)
 
         # Check if any obstacles have collided with the player
-        if pygame.sprite.spritecollideany(main_character, collidables):
+        if pygame.sprite.spritecollideany(main_character, wall_collidables):
             # If so, then remove the player and stop the loop
             main_character.kill()
             running = False
+            # TODO show 'You Died' - Message :)
+
+        # if pygame.sprite.spritecollideany(main_character, gate_collidables, check_gate_collision):
+
+        gate_sprite = pygame.sprite.spritecollideany(main_character, gate_collidables)
+        if gate_sprite and main_character.get_current_form() is not gate_sprite.get_gate_type():
+            print("Gate type:", gate_sprite.get_gate_type())  # linter warning is wrong here, just ignore it
+            print("Current player form does not match gate type! Point deduction!")
+            # main_character.kill()  # TODO maybe don't kill when wrong form but only decrease points ?
+            # running = False
 
         # Flip the contents of pygame's software double buffer to the screen.
         # This makes everything we've drawn visible all at once.
