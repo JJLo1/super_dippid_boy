@@ -58,7 +58,7 @@ class ImageHandler:
                 else:
                     image = image.convert_alpha()
 
-                self.image_dict[image_file] = (image, image.get_rect())
+                self.image_dict[image_file] = image
 
             except pygame.error as message:
                 print('Cannot load image:', fullname)
