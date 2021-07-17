@@ -1,7 +1,7 @@
 import random
 import pygame
-from enum import Enum
 from game_constants import SCREEN_HEIGHT
+from gate_type import GateType
 
 
 class SharedObstacleState:
@@ -13,29 +13,6 @@ class SharedObstacleState:
     @classmethod
     def increase_move_speed(cls):
         cls.obstacle_move_speed += 0.5  # TODO probably too much, 0.2 instead?
-
-
-class GateType(Enum):
-    CIRCLE = "circle"
-    LINE = "line"
-    RECTANGLE = "rectangle"
-
-    @classmethod
-    def values(cls):
-        return list(map(lambda c: c.value, cls))
-
-    @staticmethod
-    def get_sprite_for_gate_type(gate_type):
-        # TODO load different images
-        if gate_type is GateType.CIRCLE.value:
-            return "portal.png"
-        elif gate_type is GateType.LINE.value:
-            return "portal.png"
-        elif gate_type is GateType.RECTANGLE.value:
-            return "portal.png"
-        else:
-            print("[WARNING]: Unknown gate type! Using circle as default.")
-            return "portal.png"
 
 
 class Gate(pygame.sprite.Sprite, SharedObstacleState):

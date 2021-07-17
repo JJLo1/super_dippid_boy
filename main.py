@@ -148,7 +148,7 @@ def main():
 
     # create an event timer that fires an event each time the specified amount in milliseconds passes,
     # see https://stackoverflow.com/questions/18948981/do-something-every-x-milliseconds-in-pygame
-    interval_time = random.randrange(2500, 4500)  # every 2.5 until 4.5 seconds
+    interval_time = 3000  # random.randrange(2500, 4500)  # every 2.5 until 4.5 seconds
     SPAWN_OBSTACLE_EVENT = pygame.USEREVENT + 1
     pygame.time.set_timer(SPAWN_OBSTACLE_EVENT, interval_time)
 
@@ -165,6 +165,7 @@ def main():
 
     show_initial_scene(screen, background)
 
+    background_movement_speed = 1.5
     running = True
     # main game loop
     while running:
@@ -199,7 +200,12 @@ def main():
                 # TODO gesture finished
                 pass
             elif event.type == INCREASE_SPEED_EVENT:
+                # increase the movement speed of the obstacles
                 SharedObstacleState.increase_move_speed()
+                # and decrease the spawn time of the next obstacles  # TODO maybe this is too hard?
+                interval_time -= 30
+                pygame.time.set_timer(SPAWN_OBSTACLE_EVENT, interval_time)
+
             elif event.type == SPAWN_OBSTACLE_EVENT:
                 # create a new obstacle to the right of the current screen whenever our custom event is sent
                 new_obstacle = Obstacle(SCREEN_WIDTH + 20, image_handler)
@@ -228,7 +234,7 @@ def main():
         screen.blit(background, upcoming_background, area=background_area)
 
         # move the background position rect to get a scrolling background
-        background_rect.move_ip(-1.5, 0)
+        background_rect.move_ip(-background_movement_speed, 0)
 
         # it the right edge of the "left" image is zero, that means it's fully out of view
         if background_rect.right == 0:
