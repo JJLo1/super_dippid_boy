@@ -30,9 +30,7 @@ class SlimeCharacter(pygame.sprite.Sprite):
 
         self.sound_handler = sound_handler
         self.image_handler = image_handler
-        self.character_images = []
-        self.load_images(graphics_folder)
-        print(self.character_images[1])
+        self.character_images = ImageHandler.get_images_from_directory(graphics_folder)
         self.original_image = self.character_images[0]
         self.rect = self.original_image.get_rect()# load the sprite for this game object
         #self.original_image =  pygame.transform.flip(self.original_image,True,False)
@@ -42,17 +40,7 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self.movement_y = 0.0
         self.rot = 0
         self.current_image_index = 0
-
-
         self._set_initial_position()
-
-    def load_images(self, directory):
-        for filename in os.listdir(directory):
-            image = pygame.image.load(f"{directory}/{filename}")
-            image = pygame.transform.scale(image,(50, 50))
-            self.character_images.append(image)
-
-
 
     def _set_initial_position(self):
         screen = pygame.display.get_surface()
