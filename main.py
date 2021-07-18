@@ -11,6 +11,7 @@ import pygame
 from pygame.locals import (
     MOUSEBUTTONUP,
     MOUSEBUTTONDOWN,
+    MOUSEMOTION,
     KEYUP,
     K_ESCAPE,
     KEYDOWN,
@@ -105,7 +106,7 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self._set_movement((0, angle))
 
 
-def end_game():
+def end_game(dippid_sensor):
     # stop music
     pygame.mixer.music.stop()
     pygame.mixer.quit()
@@ -113,6 +114,8 @@ def end_game():
     pygame.quit()
 
     # TODO finish dippid device as well
+    dippid_sensor.disconnect()
+    # sys.exit(0)
 
 
 def setup_game():
@@ -125,14 +128,7 @@ def setup_game():
     w, h = screen.get_size()
     background = pygame.transform.smoothscale(background_image, [int(w), int(h)])
 
-    """
-    top_border_block = pygame.Surface((SCREEN_WIDTH, 50), pygame.SRCALPHA)  # pygame.SRCALPHA makes it transparent
-    top_border_rect = top_border_block.get_rect(topleft=(0, 0))
-
-    bottom_border_block = pygame.Surface((SCREEN_WIDTH, 50), pygame.SRCALPHA)
-    bottom_border_rect = bottom_border_block.get_rect(bottomleft=(0, SCREEN_HEIGHT))
-    """
-    return screen, background, background_rect  # , top_border_rect, bottom_border_rect
+    return screen, background, background_rect
 
 
 def show_initial_scene(screen, background):
@@ -142,6 +138,23 @@ def show_initial_scene(screen, background):
     # have changed for them to be visible to the user. With double buffered displays the display must be swapped
     # (or flipped) for the changes to become visible
     pygame.display.flip()
+
+
+"""
+    def set_custom_filter(self, point_filter):
+        self.custom_filter = point_filter
+
+    def get_current_points(self):
+        return self.points
+
+    def reset_current_points(self):
+        self.points = []
+"""
+
+
+def draw_gesture(surface, points):
+    # pygame.draw.aalines(surface, (255, 0, 0), closed=False, points=points, blend=1)  # anti-aliased lines
+    pygame.draw.lines(surface, (255, 0, 0), closed=False, points=points, width=3)
 
 
 # TODO this main method is far too long -> extract most of it to a main class, e.g. "Game", as in the Praxisseminar
@@ -176,14 +189,20 @@ def main():
     UPDATE_SCORE_EVENT = pygame.USEREVENT + 3
     pygame.time.set_timer(UPDATE_SCORE_EVENT, 1000)  # update score each second
 
+    # HIDE_GESTURE_EVENT = pygame.USEREVENT + 4
+
     # Clock object used to help control the game's framerate. Used in the main loop to make sure the game doesn't run
     # too fast
     clock = pygame.time.Clock()
 
-    font = pygame.font.Font(None, 25)  # TODO show the current point score on the screen
+    font = pygame.font.Font(None, 25)
     current_points = 0
 
     show_initial_scene(screen, background)
+
+    is_drawing = False
+    show_gesture = False
+    gesture_points = []
 
     background_movement_speed = 1.5
     running = True
@@ -206,15 +225,21 @@ def main():
             elif event.type == MOUSEBUTTONDOWN:
                 if event.button == 1:
                     print("You pressed the left mouse button")
-                    # TODO start drawing gesture
+                    # started drawing gesture
+                    is_drawing = True
+                    show_gesture = True
+                    gesture_points = []  # reset the points
                 elif event.button == 3:
                     print("You pressed the right mouse button")
-
-                pos = pygame.mouse.get_pos()
-                print("Clicked at ", pos)
             elif event.type == MOUSEBUTTONUP:
-                # TODO gesture finished
-                pass
+                # gesture finished
+                if event.button == 1:  # if the left mouse button was released
+                    is_drawing = False
+                    show_gesture = False
+                    # draw_gesture(screen, gesture_points)  # too early to show gesture
+            elif event.type == MOUSEMOTION:
+                if is_drawing:
+                    gesture_points.append((pygame.mouse.get_pos()))
             elif event.type == INCREASE_SPEED_EVENT:
                 # increase the movement speed of the obstacles
                 SharedObstacleState.increase_move_speed()
@@ -231,6 +256,11 @@ def main():
 
             elif event.type == UPDATE_SCORE_EVENT:
                 current_points += 5
+            """
+            elif event.type == HIDE_GESTURE_EVENT:
+                show_gesture = False
+                pygame.time.set_timer(HIDE_GESTURE_EVENT, 0)  # stop timer
+            """
 
         main_character.change_movement(angle=dippid.get_value('gravity')['x'])
         """
@@ -249,11 +279,8 @@ def main():
         elif keys[pygame.K_s]:
             main_character.change_movement(angle=-10)
 
-        # draw background (erases everything from previous frame (quite inefficient!))
+        # draw background (erases everything from previous frame (TODO quite inefficient!))
         screen.blit(background, background_rect, area=background_area)
-        # more efficient:
-        # [screen.blit(background, sprite.rect, sprite.rect) for game_object_group in game_objects for sprite
-        #  in game_object_group.sprites()]
 
         # Implement a scrolling background, see https://stackoverflow.com/questions/51320007/side-scrolling-background
         # the new position of the upcoming background is calculated by simply moving the rect by the width of the image
@@ -276,8 +303,9 @@ def main():
         obstacles.update()
         obstacles.draw(screen)
 
-        # print(f"Number of obstacles: {len(obstacles)}")
-        # print(f"Number of walls: {len(wall_collidables)}")
+        if show_gesture and len(gesture_points) > 2:  # we need at least two points to draw a line
+            draw_gesture(screen, gesture_points)
+            # pygame.time.set_timer(HIDE_GESTURE_EVENT, 500)  # hide gesture after 500 ms
 
         main_character.update()
         screen.blit(main_character.image, main_character.rect)
@@ -299,18 +327,14 @@ def main():
         if gate_sprite and main_character.get_current_form() is not gate_sprite.get_gate_type():
             print("Gate type:", gate_sprite.get_gate_type())  # linter warning is wrong here, just ignore it
             print("Current player form does not match gate type! Point deduction!")
-            # main_character.kill()  # TODO maybe don't kill when wrong form but only decrease points ?
-            # running = False
-
             current_points -= 20  # FIXME this is executed 60 times per second
 
         # Flip the contents of pygame's software double buffer to the screen.
         # This makes everything we've drawn visible all at once.
         pygame.display.flip()
-        # pygame.display.update(...)  # can be used instead to update only a part of the display
 
     # quit the game and clean up after the main loop finished
-    end_game()
+    end_game(dippid)
 
 
 if __name__ == "__main__":
