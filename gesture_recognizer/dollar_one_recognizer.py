@@ -11,6 +11,7 @@ from dollar_one_utils import calc_dist_at_best_angle, calc_path_length, calc_euc
     calc_centroid, rotate_by
 
 
+# noinspection PyMethodMayBeStatic
 class DollarOneRecognizer:
 
     SQUARE_SIZE = 100
@@ -127,4 +128,4 @@ class DollarOneRecognizer:
         if T_new is None:
             return
         score = 1 - b / 0.5 * np.sqrt(self.SQUARE_SIZE**2 + self.SQUARE_SIZE**2)
-        return T_new, score  # np.dot(T_new, score)
+        return T_new, score

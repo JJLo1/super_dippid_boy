@@ -10,10 +10,6 @@ import sys
 import numpy as np
 
 
-def degree_to_radians(degree):
-    return degree * np.pi / 180.0
-
-
 def calc_euclidean_distance(p1, p2):
     # Pythagorean theorem
     a = p2[0] - p1[0]
@@ -32,16 +28,16 @@ def calc_path_length(points):
     return distance
 
 
-def calc_path_distance(A, B):
-    if len(A) != len(B):
+def calc_path_distance(point_path, template_path):
+    if len(point_path) != len(template_path):
         print("Error! Samples A and B are not equal in length!")
         sys.exit(1)
 
     distance = 0
-    for i in range(1, len(A)):
-        distance += calc_euclidean_distance(A[i], B[i])
+    for i in range(1, len(point_path)):
+        distance += calc_euclidean_distance(point_path[i], template_path[i])
 
-    return distance / len(A)
+    return distance / len(point_path)
 
 
 def calc_centroid(points: np.ndarray):
