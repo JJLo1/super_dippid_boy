@@ -1,6 +1,6 @@
 import random
 import pygame
-from game_constants import SCREEN_HEIGHT
+from game_settings import SCREEN_HEIGHT
 from gate_type import GateType
 
 
