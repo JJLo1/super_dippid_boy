@@ -1,6 +1,8 @@
+import sys
 import pygame
 from assets_loader import ImageHandler
 from game_settings import *
+from gate_type import GateType
 
 
 class PlayerCharacter(pygame.sprite.Sprite):
@@ -25,6 +27,7 @@ class PlayerCharacter(pygame.sprite.Sprite):
         self.current_image_index = 0
         self.current_frag = 0
 
+        self.__current_form = GateType.TRIANGLE.value
         self._set_initial_position()
 
     def _set_initial_position(self):
@@ -57,24 +60,16 @@ class PlayerCharacter(pygame.sprite.Sprite):
 
     def _move(self):
         self.rect.move_ip((self.movement_x, self.movement_y))  # 'ip' makes the changes happen 'in-place'
-        """
-        if self.rect.left < 0:
-            self.rect.left = 0
-        if self.rect.right > SCREEN_WIDTH:
-            self.rect.right = SCREEN_WIDTH
-        if self.rect.top <= 0:
-            self.rect.top = 0
-        if self.rect.bottom >= SCREEN_HEIGHT:
-            self.rect.bottom = SCREEN_HEIGHT
-        """
         # make sure that the character cannot leave the game window
         self.rect.clamp_ip((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 100))  # TODO magic numbers
 
-    def play_character_sound(self, sound_name: str):
-        self.sound_handler.play_sound(sound_name)
-
     def get_current_form(self):
-        pass
+        print(f"Returning current player form: {self.__current_form}")
+        return self.__current_form
+
+    def set_current_form(self, form):
+        sys.stderr.write(f"new player form: {form}")
+        self.__current_form = form
 
     def _set_movement(self, new_movement):
         self.movement_x, self.movement_y = new_movement

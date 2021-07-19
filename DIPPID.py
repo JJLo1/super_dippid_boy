@@ -1,17 +1,21 @@
+"""
+This file was taken from https://github.com/PDA-UR/DIPPID-py.
+"""
+
 import sys
 import json
 from threading import Thread
 from time import sleep
-from datetime import datetime
 import signal
 
 # those modules are imported dynamically during runtime
 # they are imported only if the corresponding class is used
-#import socket
-#import serial
-#import wiimote
+# import socket
+# import serial
+# import wiimote
 
-class Sensor():
+
+class Sensor:
     # class variable that stores all instances of Sensor
     instances = []
 
@@ -76,7 +80,7 @@ class Sensor():
             return self._data[key]
         except KeyError:
             # notification when trying to get values for a non-existent capability
-            #raise KeyError(f'"{key}" is not a capability of this sensor.')
+            # raise KeyError(f'"{key}" is not a capability of this sensor.')
             return None
 
     # register a callback function for a change in specified capability
@@ -96,6 +100,7 @@ class Sensor():
     def _notify_callbacks(self, key):
         for func in self._callbacks[key]:
             func(self._data[key])
+
 
 # sensor connected via WiFi/UDP
 # initialized with a UDP port
@@ -125,6 +130,7 @@ class SensorUDP(Sensor):
             except UnicodeDecodeError:
                 continue
             self._update(data_decoded)
+
 
 # sensor connected via serial connection (USB)
 # initialized with a path to a TTY (e.g. /dev/ttyUSB0)
@@ -158,6 +164,7 @@ class SensorSerial(Sensor):
         except:
             # connection lost, try again
             self._connect()
+
 
 # uses a Nintendo Wiimote as a sensor (connected via Bluetooth)
 # initialized with a Bluetooth address
@@ -204,10 +211,12 @@ class SensorWiimote(Sensor):
             self._data[key] = value
             self._notify_callbacks(key)
 
+
 # close the program softly when ctrl+c is pressed
 def handle_interrupt_signal(signal, frame):
     for sensor in Sensor.instances:
         sensor.disconnect()
     sys.exit(0)
+
 
 signal.signal(signal.SIGINT, handle_interrupt_signal)
