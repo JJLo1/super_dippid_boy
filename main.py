@@ -50,8 +50,8 @@ class SuperDippidBoy(QtWidgets.QWidget):
         self.image_handler = ImageHandler()
         # TODO make sure the transition at the end when replaying is smooth!
         self.sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
-        #self.run_game()
-        self.run_start_screen()
+        self.run_game()
+        #self.run_start_screen()
 
     def end_game(self):
         # stop music
