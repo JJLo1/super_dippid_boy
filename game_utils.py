@@ -1,3 +1,4 @@
+import pygame
 from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT
 
 
@@ -22,3 +23,8 @@ def check_gate_collision(player, gate):
                 # they collide only if the player's current form does not match the gate type
                 return True
     return False
+
+
+def draw_gesture(surface, points):
+    # pygame.draw.aalines(surface, (255, 0, 0), closed=False, points=points, blend=1)  # anti-aliased lines
+    pygame.draw.lines(surface, (255, 0, 0), closed=False, points=points, width=3)
