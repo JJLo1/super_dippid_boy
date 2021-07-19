@@ -48,7 +48,8 @@ class PlayerCharacter(pygame.sprite.Sprite):
         self.rot = (self.rect.bottom / self.area.bottom)*180+180  # bei 0 = 1 bei self.area.bottom = -1 self.bottom/2 0
         new_image = pygame.transform.rotate(self.image, self.rot)
         new_rect = self.rect.copy()
-        new_rect.center = new_image.get_rect().center
+        
+        new_rect.center = self.rect.center
         self.image, self.rect = (new_image, new_rect)
 
     def _move(self):
