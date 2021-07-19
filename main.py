@@ -5,7 +5,7 @@ import random
 from DIPPID import SensorUDP
 from assets_loader import ImageHandler, SoundHandler
 from obstacle import Obstacle, SharedObstacleState
-from game_constants import *
+from game_settings import *
 import pygame
 # pygame.locals puts a set of useful constants and functions into the global namespace of this script
 from pygame.locals import (

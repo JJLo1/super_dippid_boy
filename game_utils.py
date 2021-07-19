@@ -1,4 +1,4 @@
-from game_constants import SCREEN_WIDTH, SCREEN_HEIGHT
+from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT
 
 
 def get_screen_center_for_surface(surface_rect):
