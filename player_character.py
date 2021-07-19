@@ -23,6 +23,7 @@ class PlayerCharacter(pygame.sprite.Sprite):
         self.movement_y = 0.0
         self.rot = 0
         self.current_image_index = 0
+        self.current_frag = 0
 
         self._set_initial_position()
 
@@ -39,17 +40,19 @@ class PlayerCharacter(pygame.sprite.Sprite):
         self._update_rotation()
 
     def _animate_character(self):
-        if self.current_image_index > len(self.character_images)-1:
-            self.current_image_index = 0
+        self.current_frag = self.current_frag+1
+        if self.current_frag == 15:
+            if self.current_image_index >= len(self.character_images)-1:
+                self.current_image_index = 0
+            self.current_image_index += 1
+            self.current_frag = 0
         self.image = self.character_images[self.current_image_index]
-        self.current_image_index += 1
+
 
     def _update_rotation(self):
         self.rot = (self.rect.bottom / self.area.bottom)*180+180  # bei 0 = 1 bei self.area.bottom = -1 self.bottom/2 0
         new_image = pygame.transform.rotate(self.image, self.rot)
-        new_rect = self.rect.copy()
-        
-        new_rect.center = self.rect.center
+        new_rect = new_image.get_rect(center=self.image.get_rect(center=self.rect.center).center)
         self.image, self.rect = (new_image, new_rect)
 
     def _move(self):
