@@ -2,11 +2,15 @@
 # -*- coding:utf-8 -*-
 
 import random
+import sys
 from DIPPID import SensorUDP
 from assets_loader import ImageHandler, SoundHandler
+from gate_type import GateType
 from obstacle import Obstacle, SharedObstacleState
+from gesture_recognizer.dollar_one_recognizer import DollarOneRecognizer
 from game_constants import *
 import pygame
+import pygame_menu
 # pygame.locals puts a set of useful constants and functions into the global namespace of this script
 from pygame.locals import (
     MOUSEBUTTONUP,
@@ -43,13 +47,16 @@ class SlimeCharacter(pygame.sprite.Sprite):
         # load all sprites for the character
         self.character_images = ImageHandler.get_images_from_directory(graphics_folder)
         self.original_image = self.character_images[0]
-        self.rect = self.original_image.get_rect()
+        self.rect = self.original_image.get_rect()  # TODO make player hitbox a little bit smaller to make it easier?
         self.image = self.original_image
 
         self.movement_x = 0.0
         self.movement_y = 0.0
         self.rot = 0
         self.current_image_index = 0
+
+        # self.__current_form = "triangle"
+        self.__current_form = GateType.TRIANGLE.value
 
         self._set_initial_position()
 
@@ -97,7 +104,13 @@ class SlimeCharacter(pygame.sprite.Sprite):
         self.sound_handler.play_sound(sound_name)
 
     def get_current_form(self):
-        pass
+        print(f"Returning current player form: {self.__current_form}")
+        return self.__current_form
+
+    def set_current_form(self, form):
+        sys.stderr.write(f"new player form: {form}")
+        # TODO match form to GateType Enum values
+        self.__current_form = form
 
     def _set_movement(self, new_movement):
         self.movement_x, self.movement_y = new_movement
@@ -113,22 +126,22 @@ def end_game(dippid_sensor):
 
     pygame.quit()
 
+    # show_start_menu()
+
     # TODO finish dippid device as well
     dippid_sensor.disconnect()
+    quit()
     # sys.exit(0)
 
 
-def setup_game():
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))   # setup the game window
-    pygame.display.set_caption(GAME_TITLE)
-
+def setup_background(screen):
     # setup background
     background_image, background_rect = ImageHandler.load_background_image()
     # scale the background image to fill the entire background
     w, h = screen.get_size()
     background = pygame.transform.smoothscale(background_image, [int(w), int(h)])
 
-    return screen, background, background_rect
+    return background, background_rect
 
 
 def show_initial_scene(screen, background):
@@ -140,29 +153,92 @@ def show_initial_scene(screen, background):
     pygame.display.flip()
 
 
-"""
-    def set_custom_filter(self, point_filter):
-        self.custom_filter = point_filter
-
-    def get_current_points(self):
-        return self.points
-
-    def reset_current_points(self):
-        self.points = []
-"""
-
-
 def draw_gesture(surface, points):
     # pygame.draw.aalines(surface, (255, 0, 0), closed=False, points=points, blend=1)  # anti-aliased lines
     pygame.draw.lines(surface, (255, 0, 0), closed=False, points=points, width=3)
 
 
+def add_new_gesture(gesture_recognizer):
+    # TODO show text input and add draw field for gesture as well as save and cancel buttons
+    # gesture_recognizer.save_gesture("name", points)
+    pass
+
+
+def show_available_gestures(gesture_recognizer):
+    # TODO show names and draw gesture in a small window below each name
+    pass
+
+
+def show_start_menu(screen):
+    # load gestures and init gesture recognizer
+    gesture_recognizer = DollarOneRecognizer()
+
+    add_gesture_submenu = pygame_menu.Menu('Add new gesture', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                           theme=pygame_menu.themes.THEME_SOLARIZED)
+    add_gesture_submenu.add.label("Draw the gesture:", max_char=-1, font_size=20, border_width=0)
+    draw_surface = pygame.Surface((SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
+    draw_surface.fill((255, 255, 255))
+    add_gesture_submenu.add.surface(draw_surface)
+    add_gesture_submenu.add.vertical_margin(40)
+    add_gesture_submenu.add.text_input("Enter gesture name: ", default="rectangle", maxchar=12, border_width=0,
+                                       input_underline='_')
+    add_gesture_submenu.add.button('Save gesture', add_new_gesture, gesture_recognizer)
+    add_gesture_submenu.add.vertical_margin(20)
+    add_gesture_submenu.add.button('Return to main menu', pygame_menu.events.BACK)
+
+    show_gestures_submenu = pygame_menu.Menu('All available gestures', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                             theme=pygame_menu.themes.THEME_SOLARIZED)
+    all_gestures = gesture_recognizer.get_all_gestures()
+    # TODO show them
+
+    menu = pygame_menu.Menu('Welcome to SUPER DIPPID BOY', SCREEN_WIDTH, SCREEN_HEIGHT,
+                            theme=pygame_menu.themes.THEME_SOLARIZED)
+
+    menu.add.button('Play', start_game, screen, gesture_recognizer, menu)
+    menu.add.button('Add gesture', add_gesture_submenu)  # TODO debug only
+    menu.add.button('Show available gestures', show_gestures_submenu)
+    menu.add.button('Quit', pygame_menu.events.EXIT)
+
+    menu.mainloop(screen)
+    """
+    gesture_points = []
+    is_drawing = False
+    while True:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                exit()
+            elif event.type == MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    # started drawing gesture
+                    is_drawing = True
+                    gesture_points = []  # reset the points
+            elif event.type == MOUSEBUTTONUP:
+                if event.button == 1:  # if the left mouse button was released
+                    is_drawing = False
+            elif event.type == MOUSEMOTION:
+                if is_drawing:
+                    gesture_points.append((pygame.mouse.get_pos()))
+
+        if menu.is_enabled():
+            menu.update(events)
+            menu.draw(screen)
+
+            if len(gesture_points) > 2:  # we need at least two points to draw a line
+                draw_gesture(draw_surface, gesture_points)
+
+        pygame.display.update()
+        """
+
+
 # TODO this main method is far too long -> extract most of it to a main class, e.g. "Game", as in the Praxisseminar
-def main():
+def start_game(screen, gesture_recognizer, menu):
+    menu.disable()
+    menu.full_reset()
+
     dippid = SensorUDP(5700)  # TODO port should be given as argument to program and error handling + start screen
 
-    pygame.init()  # setup and initialize pygame
-    screen, background, background_rect = setup_game()
+    background, background_rect = setup_background(screen)
     background_width, background_height = background.get_size()
     background_area = (0, 10, background_width, background_height)  # cut off 10 pixels at the top of the background
 
@@ -206,12 +282,13 @@ def main():
 
     background_movement_speed = 1.5
     running = True
+
     # main game loop
     while running:
         # make sure the game doesn't run faster than the defined frames per second
         clock.tick(FPS)
-        current_fps = clock.get_fps()
-        text = font.render(f"Current FPS: {current_fps}", True, (255, 0, 0))  # TODO only for testing
+        # current_fps = clock.get_fps()
+        # print("Current fps: ", current_fps)
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -219,6 +296,7 @@ def main():
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     running = False
+                    # menu.enable()
             elif event.type == KEYUP:
                 if event.key == pygame.K_w or event.key == pygame.K_s:
                     main_character.change_movement(angle=0)
@@ -236,7 +314,9 @@ def main():
                 if event.button == 1:  # if the left mouse button was released
                     is_drawing = False
                     show_gesture = False
-                    # draw_gesture(screen, gesture_points)  # too early to show gesture
+                    predicted_gesture = gesture_recognizer.predict_gesture(gesture_points)
+                    print(f"\n########Predicted gesture in main: {predicted_gesture}\n#########\n")
+                    main_character.set_current_form(predicted_gesture)
             elif event.type == MOUSEMOTION:
                 if is_drawing:
                     gesture_points.append((pygame.mouse.get_pos()))
@@ -275,9 +355,9 @@ def main():
 
         keys = pygame.key.get_pressed()  # checking pressed keys
         if keys[pygame.K_w]:
-            main_character.change_movement(angle=10)
-        elif keys[pygame.K_s]:
             main_character.change_movement(angle=-10)
+        elif keys[pygame.K_s]:
+            main_character.change_movement(angle=10)
 
         # draw background (erases everything from previous frame (TODO quite inefficient!))
         screen.blit(background, background_rect, area=background_area)
@@ -309,6 +389,9 @@ def main():
 
         main_character.update()
         screen.blit(main_character.image, main_character.rect)
+        # TODO debug: show hitbox of player character
+        hitbox = (main_character.rect.x, main_character.rect.y, main_character.rect.width, main_character.rect.height)
+        pygame.draw.rect(screen, (255, 0, 0), hitbox, 2)
 
         text_surface = font.render(f"Score: {current_points}", True, (255, 0, 0))
         screen.blit(text_surface, (SCREEN_WIDTH // 2 - 50, 15))
@@ -324,10 +407,16 @@ def main():
         # if pygame.sprite.spritecollideany(main_character, gate_collidables, check_gate_collision):
 
         gate_sprite = pygame.sprite.spritecollideany(main_character, gate_collidables)
-        if gate_sprite and main_character.get_current_form() is not gate_sprite.get_gate_type():
-            print("Gate type:", gate_sprite.get_gate_type())  # linter warning is wrong here, just ignore it
-            print("Current player form does not match gate type! Point deduction!")
-            current_points -= 20  # FIXME this is executed 60 times per second
+        if gate_sprite:
+            curr_form = main_character.get_current_form()
+            gate_form = gate_sprite.get_gate_type()
+            if curr_form == gate_form:
+                current_points += 20
+            else:
+                print("Gate type:", gate_sprite.get_gate_type())  # linter warning is wrong here, just ignore it
+                print("Current player form does not match gate type! Point deduction!")
+                current_points -= 20  # FIXME this is executed 60 times per second  -> change collision detection to
+                # x_pos and right edge of player only?
 
         # Flip the contents of pygame's software double buffer to the screen.
         # This makes everything we've drawn visible all at once.
@@ -337,5 +426,13 @@ def main():
     end_game(dippid)
 
 
+def main():
+    pygame.init()  # setup and initialize pygame
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))  # setup the game window
+    pygame.display.set_caption(GAME_TITLE)
+    show_start_menu(screen)
+
+
 if __name__ == "__main__":
+    # TODO add argument parser with options port and debug_mode
     main()

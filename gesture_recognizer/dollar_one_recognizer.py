@@ -5,10 +5,12 @@ a $1 recognizer for user interface prototypes. In Proceedings of the 20th annual
 interface software and technology (pp. 159-168).
 """
 
+import json
+import pathlib
 import sys
 import numpy as np
-from dollar_one_utils import calc_dist_at_best_angle, calc_path_length, calc_euclidean_distance, get_bounding_box, \
-    calc_centroid, rotate_by
+from gesture_recognizer.dollar_one_utils import calc_dist_at_best_angle, calc_path_length, calc_euclidean_distance, \
+    get_bounding_box, calc_centroid, rotate_by
 
 
 # noinspection PyMethodMayBeStatic
@@ -16,8 +18,59 @@ class DollarOneRecognizer:
 
     SQUARE_SIZE = 100
     NUM_RESAMPLED_POINTS = 64
+    GESTURE_FILE_NAME = "gestures.json"
 
-    def resample_points(self, original_points: list):
+    def __init__(self):
+        self.__gesture_file_path = pathlib.Path("gesture_recognizer") / self.GESTURE_FILE_NAME
+        self.existing_gestures: dict = self._load_gesture_data()
+
+    def _load_gesture_data(self):
+        # check if the file already exists
+        if self.__gesture_file_path.exists():
+            # if it does, load existing gestures
+            with open(self.__gesture_file_path, 'r') as f:
+                return json.load(f)
+        else:
+            sys.stderr.write(f"Gesture file '{self.GESTURE_FILE_NAME}' does not exist yet!")
+            return {}
+
+    def save_gesture(self, gesture_name, gesture_points):
+        # normalize gesture before saving so it doesn't have to be done everytime again when trying to predict something
+        normalized_gesture = self._normalize(gesture_points)
+
+        if self.existing_gestures.get(gesture_name):
+            print(f"A gesture with the name '{gesture_name}' does already exist!")
+            answer = input("Do you want to overwrite it? [y/n]\n")
+            if str.lower(answer) == "y" or "yes":
+                self.existing_gestures[gesture_name] = normalized_gesture
+            else:
+                print("\nSaving gesture cancelled.")
+                return
+        else:
+            self.existing_gestures[gesture_name] = normalized_gesture
+
+        with open(self.__gesture_file_path, 'w') as f:
+            json.dump(self.existing_gestures, f, indent=2)  # the indent parameter makes the file more human-readable
+
+    def predict_gesture(self, input_points):
+        if len(input_points) < 2:
+            sys.stderr.write("You have to draw more to predict a gesture!")
+            return
+
+        normalized_points = self._normalize(input_points)
+        recognition_result = self._recognize(normalized_points)
+        if recognition_result is not None:
+            best_template, score = recognition_result
+            print(f"{best_template}   (Score / Probability: {score:.3f})")
+            return best_template
+        else:
+            print("Couldn't predict a gesture!")
+            return None
+
+    def get_all_gestures(self):
+        return self.existing_gestures.items()
+
+    def _resample_points(self, original_points: list):
         """
         The original input points must be in the form of [(x, y), ...].
         """
@@ -60,7 +113,7 @@ class DollarOneRecognizer:
 
         return new_points
 
-    def rotate_to_zero(self, points):
+    def _rotate_to_zero(self, points):
         centroid = calc_centroid(points)
         first_point_x = points[0][0]
         first_point_y = points[0][1]
@@ -69,7 +122,7 @@ class DollarOneRecognizer:
         rotated_points = rotate_by(points=points, angle=-rotate_angle)
         return rotated_points
 
-    def scale_to_square(self, points):
+    def _scale_to_square(self, points):
         bbox = get_bounding_box(points)
         # bounding box in the form: [(min_x, min_y), (max_x, max_y)]
         bbox_width = bbox[1][0] - bbox[0][0]
@@ -83,7 +136,7 @@ class DollarOneRecognizer:
             new_points.append(scaled_point)
         return new_points
 
-    def translate_to_origin(self, points):
+    def _translate_to_origin(self, points):
         centroid = calc_centroid(points)
         new_points = []
         for point in points:
@@ -92,35 +145,31 @@ class DollarOneRecognizer:
             new_points.append([p_x, p_y])
         return new_points
 
-    def normalize(self, points):
+    def _normalize(self, points):
         # use all the processing functions from above to transform our set of points into the desired shape
-        resampled_points = self.resample_points(points)
-        rotated_points = self.rotate_to_zero(resampled_points)
-        scaled_points = self.scale_to_square(rotated_points)
-        translated_points = self.translate_to_origin(scaled_points)
+        resampled_points = self._resample_points(points)
+        rotated_points = self._rotate_to_zero(resampled_points)
+        scaled_points = self._scale_to_square(rotated_points)
+        translated_points = self._translate_to_origin(scaled_points)
         return translated_points
 
-    def recognize(self, points, template_dict):
+    def _recognize(self, points):
         """
         Slightly adapted from the pseudocode to work with a dictionary of templates and not just the point data.
         """
-        if len(template_dict) < 1:
+        if len(self.existing_gestures) < 1:
             print("There are no templates!")
             return
 
         T_new = None
         b = np.inf
-        for template_name, template_data in template_dict.items():
-            # we actually have a nested list as we wrapped in another list when saving to be able to replace it easily
-            # so we have to unpack the templates first
-            normalized_template = template_data[0]
-
-            if len(normalized_template) != len(points):
+        for template_name, template_data in self.existing_gestures.items():
+            if len(template_data) != len(points):
                 sys.stderr.write(f"Template {template_name} doesn't have the same size as the drawn gesture!")
                 continue
 
             # angle values based on the original paper from Wobbrock et al.:
-            dist = calc_dist_at_best_angle(points, normalized_template, -45, 45, 2)
+            dist = calc_dist_at_best_angle(points, template_data, -45, 45, 2)
             if dist < b:
                 b = dist
                 T_new = template_name
