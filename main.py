@@ -3,13 +3,13 @@
 
 import random
 from DIPPID import SensorUDP
-from assets_loader import SoundHandler
+from assets_loader import SoundHandler, ImageHandler
+from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS
 from game_utils import draw_gesture
 from obstacle import Obstacle, SharedObstacleState
 from gesture_recognizer.dollar_one_recognizer import DollarOneRecognizer
-from player_character import *
+from player_character import PlayerCharacter
 import pygame
-from PyQt5 import QtWidgets, uic, QtGui
 # pygame.locals puts a set of useful constants and functions into the global namespace of this script
 from pygame.locals import (
     MOUSEBUTTONUP,
@@ -31,47 +31,24 @@ random.seed(42)  # set a random seed to make the game deterministic while testin
 
 
 # noinspection PyAttributeOutsideInit
-class SuperDippidBoy(QtWidgets.QWidget):
+class SuperDippidBoy:
 
     def __init__(self, dippid_port=5700):
-        super().__init__()
-        self.start_screen = QtWidgets.QWidget()
-        self.__ui = uic.loadUi("assets/start_menu.ui", self)
-        self.setFixedSize(SCREEN_WIDTH, SCREEN_HEIGHT)
+        # init dippid  # TODO error handling
         self.dippid_sensor = SensorUDP(dippid_port)
 
         # init gesture recognizer
         self.gesture_recognizer = DollarOneRecognizer()
 
-        self.setup_game()
-        self.background_width, self.background_height = self.background.get_size()
-        # cut off 10 pixels at the top of the background
-        self.background_area = (0, 10, self.background_width, self.background_height)
-        # self.show()
+        # setup the pygame window
+        self.setup_game_window()
 
+        # and resource handlers
         self.sound_handler = SoundHandler()
         self.image_handler = ImageHandler()
-        # TODO make sure the transition at the end when replaying is smooth!
-        self.sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
-        # self.run_game()
-        self.run_start_screen()
 
-    def end_game(self):
-        # stop music
-        pygame.mixer.music.stop()
-        pygame.mixer.quit()
-        # stop dippid sensor
-        # TODO check that dippid_sensor has successfully connected! -> some error handling for dippid
-        self.dippid_sensor.disconnect()
-        # quit pygame
-        pygame.quit()
-        # quit pyQt
-        self.close()
-        # sys.exit(0)
-
-    def setup_game(self):
-        # pygame needs a display to work properly, but since we use PyQt to display our game we will set it hidden
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.HIDDEN)
+    def setup_game_window(self):
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(GAME_TITLE)
         pygame.display.iconify()
 
@@ -80,6 +57,9 @@ class SuperDippidBoy(QtWidgets.QWidget):
         # scale the background image to fill the entire background
         w, h = self.screen.get_size()
         self.background = pygame.transform.smoothscale(background_image, [int(w), int(h)])
+        self.background_width, self.background_height = self.background.get_size()
+        # cut off 10 pixels at the top of the background
+        self.background_area = (0, 10, self.background_width, self.background_height)
 
     def draw_background(self):
         # Display the background
@@ -87,17 +67,22 @@ class SuperDippidBoy(QtWidgets.QWidget):
         # Changes to the display surface are not immediately visible. Normally, a display must be updated in areas that
         # have changed for them to be visible to the user. With double buffered displays the display must be swapped
         # (or flipped) for the changes to become visible
-        # pygame.display.flip()
+        pygame.display.flip()
 
-    def run_start_screen(self):
+    def show_start_screen(self):
         self.draw_background()
-        self.menu_widget = self.__ui.GameMenu
-        self.menu_widget.move(self.rect().center() - self.menu_widget.rect().center())
-        self.__ui.StartGameButton.clicked.connect(self.run_game)
+        # TODO show menu
 
-    def run_game(self):
-        self.menu_widget.hide()
-        main_character = PlayerCharacter(self.image_handler, self.sound_handler, graphics_folder="assets/Triangle")
+        self.start_game()
+
+    def start_game(self):
+        # TODO make sure the transition at the end when replaying is smooth!
+        self.sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
+
+        self.main_character = PlayerCharacter(self.image_handler, self.sound_handler, graphics_folder="assets/Triangle")
+        self.run_game_loop()
+
+    def run_game_loop(self):
         obstacles = pygame.sprite.Group()  # for rendering all obstacles
         wall_collidables = pygame.sprite.Group()  # for collision detection
         gate_collidables = pygame.sprite.Group()
@@ -145,7 +130,7 @@ class SuperDippidBoy(QtWidgets.QWidget):
                         running = False
                 elif event.type == KEYUP:
                     if event.key == pygame.K_w or event.key == pygame.K_s:
-                        main_character.change_movement(angle=0)
+                        self.main_character.change_movement(angle=0)
                 elif event.type == MOUSEBUTTONDOWN:
                     if event.button == 1:
                         print("You pressed the left mouse button")
@@ -162,7 +147,7 @@ class SuperDippidBoy(QtWidgets.QWidget):
                         show_gesture = False
                         predicted_gesture = self.gesture_recognizer.predict_gesture(gesture_points)
                         # print(f"\n########Predicted gesture in main: {predicted_gesture}\n#########\n")
-                        main_character.set_current_form(predicted_gesture)
+                        self.main_character.set_current_form(predicted_gesture)
 
                 elif event.type == MOUSEMOTION:
                     if is_drawing:
@@ -185,10 +170,10 @@ class SuperDippidBoy(QtWidgets.QWidget):
                     current_points += 5
 
             if "gravity" in self.dippid_sensor.get_capabilities():
-                main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')['x'])
+                self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')['x'])
             # TODO: check if "angle" is bugged on m5stack, since the values seemed strange
             elif "angle" in self.dippid_sensor.get_capabilities():
-                main_character.change_movement(angle=self.dippid_sensor.get_value('angle')['x'])
+                self.main_character.change_movement(angle=self.dippid_sensor.get_value('angle')['x'])
             """
             # alternative:
             if dippid.get_value('gravity')['y'] > 1:
@@ -201,9 +186,9 @@ class SuperDippidBoy(QtWidgets.QWidget):
 
             keys = pygame.key.get_pressed()  # checking pressed keys
             if keys[pygame.K_w]:
-                main_character.change_movement(angle=-10)
+                self.main_character.change_movement(angle=-10)
             elif keys[pygame.K_s]:
-                main_character.change_movement(angle=10)
+                self.main_character.change_movement(angle=10)
 
             # draw background (erases everything from previous frame; quite inefficient but works for now)
             self.screen.blit(self.background, self.background_rect, area=self.background_area)
@@ -234,30 +219,29 @@ class SuperDippidBoy(QtWidgets.QWidget):
                 draw_gesture(self.screen, gesture_points)
                 # pygame.time.set_timer(HIDE_GESTURE_EVENT, 500)  # hide gesture after 500 ms
 
-            main_character.update()
-            self.screen.blit(main_character.image, main_character.rect)
+            self.main_character.update()
+            self.screen.blit(self.main_character.image, self.main_character.rect)
             # TODO debug: show hitbox of player character
-            # hitbox = (main_character.rect.x, main_character.rect.y, main_character.rect.width,
-            #          main_character.rect.height)
-            # pygame.draw.rect(self.screen, (255, 0, 0), hitbox, 2)
-            # pygame.draw.rect(self.screen,(255,0,0),main_character.rect)
+            hitbox = (self.main_character.rect.x, self.main_character.rect.y, self.main_character.rect.width,
+                      self.main_character.rect.height)
+            pygame.draw.rect(self.screen, (255, 0, 0), hitbox, 2)
 
             text_surface = font.render(f"Score: {current_points}", True, (255, 0, 0))
             self.screen.blit(text_surface, (SCREEN_WIDTH // 2 - 50, 15))
 
             # Check if any obstacles have collided with the player
-            if pygame.sprite.spritecollideany(main_character, wall_collidables):
+            if pygame.sprite.spritecollideany(self.main_character, wall_collidables):
                 # If so, then remove the player and stop the loop
                 print("Player collided with wall! Game over!")
-                main_character.kill()
+                # self.main_character.kill()
                 # running = False
                 # TODO show 'You Died' - Message :)
 
             # if pygame.sprite.spritecollideany(main_character, gate_collidables, check_gate_collision):
 
-            gate_sprite = pygame.sprite.spritecollideany(main_character, gate_collidables)
+            gate_sprite = pygame.sprite.spritecollideany(self.main_character, gate_collidables)
             if gate_sprite:
-                curr_form = main_character.get_current_form()
+                curr_form = self.main_character.get_current_form()
                 gate_form = gate_sprite.get_gate_type()
                 if curr_form == gate_form:
                     current_points += 20
@@ -269,33 +253,28 @@ class SuperDippidBoy(QtWidgets.QWidget):
 
             # Flip the contents of pygame's software double buffer to the screen.
             # This makes everything we've drawn visible all at once.
-            # pygame.display.flip()
-
-            # update the QWidget
-            self.update()
+            pygame.display.flip()
 
         # quit the game and clean up after the main loop finished
         self.end_game()
 
-    def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
-        image_data = self.screen.get_buffer().raw
-        image = QtGui.QImage(image_data, self.screen.get_width(), self.screen.get_height(), QtGui.QImage.Format_RGB32)
-        qp = QtGui.QPainter()
-        qp.begin(self)
-        qp.drawImage(0, 0, image)
-        qp.end()
+    def end_game(self):
+        # stop music
+        pygame.mixer.music.stop()
+        pygame.mixer.quit()
 
-    # Override close event, so we can close the pygame window and sounds too
-    def closeEvent(self, event: QtGui.QCloseEvent):
-        self.end_game()
+        # stop dippid sensor
+        # TODO check that dippid_sensor was successfully connected! -> some error handling for dippid
+        self.dippid_sensor.disconnect()
+        # quit pygame
+        pygame.quit()
+        # sys.exit(0)
 
 
 def main():
-    app = QtWidgets.QApplication(sys.argv)
     pygame.init()  # setup and initialize pygame
     game = SuperDippidBoy()
-    game.show()
-    sys.exit(app.exec_())
+    game.show_start_screen()
 
 
 if __name__ == "__main__":

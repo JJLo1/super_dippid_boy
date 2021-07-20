@@ -1,7 +1,7 @@
 import sys
 import pygame
 from assets_loader import ImageHandler
-from game_settings import *
+from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT
 from gate_type import GateType
 
 
