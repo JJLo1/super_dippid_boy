@@ -51,7 +51,6 @@ class PlayerCharacter(pygame.sprite.Sprite):
             self.current_frag = 0
         self.image = self.character_images[self.current_image_index]
 
-
     def _update_rotation(self):
         self.rot = (self.rect.bottom / self.area.bottom)*180+180  # bei 0 = 1 bei self.area.bottom = -1 self.bottom/2 0
         new_image = pygame.transform.rotate(self.image, self.rot)
