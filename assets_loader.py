@@ -1,4 +1,5 @@
 import os
+import sys
 import pygame
 
 
@@ -7,7 +8,7 @@ class SoundHandler:
     Resource handling class for the game music and all sounds. Loads all defined sound assets on initialization.
     """
 
-    sound_assets = ["mysterious_harp.mp3"]
+    sound_assets = ["mysterious_harp.mp3"]  # TODO mp3 does not work in virtualBox !!
     sound_dict = dict()
 
     def __init__(self, assets_folder="assets"):
@@ -30,8 +31,15 @@ class SoundHandler:
     def play_sound(self, sound_name: str, play_infinite=False):
         sound = self.sound_dict.get(sound_name)
         if not sound:
-            raise SystemExit(f"Error while trying to load asset! Sound {sound_name} not found!")
+            raise SystemExit(f"Error while trying to load asset! Sound '{sound_name}' not found!")
         sound.play(-1) if play_infinite else sound.play()
+
+    def stop_sound(self, sound_name: str):
+        sound = self.sound_dict.get(sound_name)
+        if not sound:
+            sys.stderr.write(f"Error while trying to stop sound '{sound_name}'!")
+            return
+        sound.fadeout(3)
 
 
 class ImageHandler:
@@ -95,5 +103,5 @@ class ImageHandler:
     def get_image(self, image_name: str):
         image = self.image_dict.get(image_name)
         if not image:
-            raise SystemExit(f"Error while trying to load asset! Image {image_name} not found!")
+            raise SystemExit(f"Error while trying to load asset! Image '{image_name}' not found!")
         return image

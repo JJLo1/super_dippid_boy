@@ -3,6 +3,7 @@
 
 import argparse
 import random
+import sys
 from DIPPID import SensorUDP
 from assets_loader import SoundHandler, ImageHandler
 from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS
@@ -11,6 +12,7 @@ from obstacle import Obstacle, SharedObstacleState
 from gesture_recognizer.dollar_one_recognizer import DollarOneRecognizer
 from player_character import PlayerCharacter
 import pygame
+import pygame_menu
 # pygame.locals puts a set of useful constants and functions into the global namespace of this script
 from pygame.locals import (
     MOUSEBUTTONUP,
@@ -32,6 +34,8 @@ if not pygame.mixer:
 random.seed(42)  # set a random seed to make the game deterministic while testing
 
 
+# TODO move the SuperDippidBoy class to a 'game.py' file and rename this one to 'system_demo.py', so all game related
+#  files can go into their own subfolder
 # noinspection PyAttributeOutsideInit
 class SuperDippidBoy:
 
@@ -71,13 +75,99 @@ class SuperDippidBoy:
         # (or flipped) for the changes to become visible:
         pygame.display.flip()
 
-    def show_start_screen(self):
-        self.draw_background()
-        # TODO show menu
+    def on_gesture_name_change(self, current_text):
+        self.new_gesture_name = current_text
 
-        self.start_game()
+    def show_start_screen(self):
+        self.new_gesture = []
+        is_drawing = False
+
+        # create submenu
+        add_gesture_submenu = pygame_menu.Menu('Add new gesture', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                               theme=pygame_menu.themes.THEME_SOLARIZED)
+        add_gesture_submenu.add.label("Draw the gesture:", max_char=-1, font_size=20, border_width=0)
+        draw_surface = pygame.Surface((SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+        draw_surface.fill((255, 255, 255))
+        add_gesture_submenu.add.surface(draw_surface)
+        add_gesture_submenu.add.vertical_margin(40)
+        self.new_gesture_name = ""
+        add_gesture_submenu.add.text_input("Enter gesture name: ", default="rectangle", maxchar=12, border_width=0,
+                                           input_underline='_', onchange=self.on_gesture_name_change)
+
+        add_gesture_submenu.add.button('Save gesture', self.add_new_gesture)
+        add_gesture_submenu.add.vertical_margin(20)
+        add_gesture_submenu.add.button('Return to main menu', pygame_menu.events.BACK)
+
+        # create another submenu
+        show_gestures_submenu = pygame_menu.Menu('All available gestures', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                 theme=pygame_menu.themes.THEME_SOLARIZED)
+        all_gestures = self.gesture_recognizer.get_all_gestures()
+        # TODO show them in a grid menu: column = label + surface/frame with drawing
+
+        # main menu screen
+        self.main_menu = pygame_menu.Menu('Welcome to SUPER DIPPID BOY', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                          theme=pygame_menu.themes.THEME_SOLARIZED)
+        self.main_menu.add.button('Play', self.start_game)
+        # TODO if self.debug:
+        self.main_menu.add.button('Add gesture', add_gesture_submenu)
+        self.main_menu.add.button('Show available gestures', show_gestures_submenu)
+        self.main_menu.add.button('Quit', pygame_menu.events.EXIT)
+
+        # menu event loop; we break out of it while playing the game and return to it after the game ends
+        game_running = True
+        while game_running:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    game_running = False
+                elif event.type == MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        # Check if the mouse position is inside the draw area, otherwise ignore! Without this check
+                        # we couldn't click anywhere without resetting the gesture points too!
+                        draw_area = draw_surface.get_rect()
+                        if (draw_area.left <= pygame.mouse.get_pos()[0] <= draw_area.right) \
+                                and (draw_area.top <= pygame.mouse.get_pos()[1] <= draw_area.bottom):
+                            # started drawing gesture
+                            is_drawing = True
+                            self.new_gesture = []  # reset the points
+                elif event.type == MOUSEBUTTONUP:
+                    if event.button == 1:  # if the left mouse button was released
+                        is_drawing = False
+                elif event.type == MOUSEMOTION:
+                    if is_drawing:
+                        self.new_gesture.append((pygame.mouse.get_pos()))
+
+            if self.main_menu.is_enabled():
+                self.main_menu.update(events)
+                self.main_menu.draw(self.screen)
+
+                if len(self.new_gesture) > 2:  # we need at least two points to draw a line
+                    draw_gesture(self.screen, self.new_gesture)
+
+            pygame.display.flip()
+
+        # cleanup
+        self.end_game()
+
+    def add_new_gesture(self):
+        # check if a name was given for this gesture
+        if self.new_gesture_name == "" or self.new_gesture_name.isspace():
+            sys.stderr.write("\nThe gesture needs a name!")
+            return
+        elif len(self.new_gesture) < 2:
+            sys.stderr.write(f"\nMore points for the gesture needed! Currently {len(self.new_gesture)} points.")
+            return
+
+        self.gesture_recognizer.save_gesture(self.new_gesture_name, self.new_gesture)
+
+    def show_available_gestures(self):
+        # TODO show names and draw gesture in a small window below each name
+        pass
 
     def start_game(self):
+        self.main_menu.disable()
+        self.main_menu.full_reset()
+
         # TODO make sure the transition at the end when replaying is smooth!
         self.sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
 
@@ -146,8 +236,8 @@ class SuperDippidBoy:
             # This makes everything we've drawn visible all at once.
             pygame.display.flip()
 
-        # quit the game and clean up after the main loop finished
-        self.end_game()
+        # clean up after the main loop finished and return to the main menu
+        self.return_to_menu()
 
     def handle_events(self):
         # react to pygame events
@@ -290,16 +380,19 @@ class SuperDippidBoy:
                 self.current_points -= 20  # FIXME this is executed 60 times per second  -> change collision detection
                 # to x_pos and right edge of player only?
 
-    def end_game(self):
+    def return_to_menu(self):
         # stop music
-        pygame.mixer.music.stop()
-        pygame.mixer.quit()
+        # pygame.mixer.music.stop()
+        self.sound_handler.stop_sound("mysterious_harp.mp3")
 
-        # stop dippid sensor
+        # enable main menu again
+        self.main_menu.enable()
+
+    def end_game(self):
+        pygame.mixer.quit()
         # TODO check that dippid_sensor was successfully connected! -> some error handling for dippid
-        self.dippid_sensor.disconnect()
-        # quit pygame
-        pygame.quit()
+        self.dippid_sensor.disconnect()  # stop dippid sensor
+        pygame.quit()  # quit pygame
         # sys.exit(0)
 
 
@@ -316,8 +409,9 @@ if __name__ == "__main__":
     # setup an argument parser to enable command line parameters
     parser = argparse.ArgumentParser(description="Small gesture-based 2D-Side-Scroller made with pygame where the main "
                                                  "character can be controlled via a DIPPID device.")
-    parser.add_argument("-d", "--debug", help="Enable debug mode: shows the player hitbox and adds a menu option where "
-                                              "new gestures can be added", action="store_true", default=False)
+    parser.add_argument("-d", "--debug", help="Enable debug mode: shows the player's hitbox and allows controlling "
+                                              "the main character with 'w' and 's'. Also adds a menu option "
+                                              "where new gestures can be added", action="store_true", default=False)
     parser.add_argument("-p", "--port", help="The port on which the DIPPID device sends the data", type=int,
                         default=5700, required=False)
     args = parser.parse_args()
