@@ -10,7 +10,6 @@ from gesture_recognizer.dollar_one_recognizer import DollarOneRecognizer
 from player_character import *
 import pygame
 from PyQt5 import QtWidgets, uic, QtGui
-
 # pygame.locals puts a set of useful constants and functions into the global namespace of this script
 from pygame.locals import (
     MOUSEBUTTONUP,
@@ -48,7 +47,7 @@ class SuperDippidBoy(QtWidgets.QWidget):
         self.background_width, self.background_height = self.background.get_size()
         # cut off 10 pixels at the top of the background
         self.background_area = (0, 10, self.background_width, self.background_height)
-        self.show()
+        # self.show()
 
         self.sound_handler = SoundHandler()
         self.image_handler = ImageHandler()
@@ -62,6 +61,7 @@ class SuperDippidBoy(QtWidgets.QWidget):
         pygame.mixer.music.stop()
         pygame.mixer.quit()
         # stop dippid sensor
+        # TODO check that dippid_sensor has successfully connected! -> some error handling for dippid
         self.dippid_sensor.disconnect()
         # quit pygame
         pygame.quit()
@@ -294,7 +294,7 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     pygame.init()  # setup and initialize pygame
     game = SuperDippidBoy()
-    # game.show()  # TOdo
+    game.show()
     sys.exit(app.exec_())
 
 
