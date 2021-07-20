@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
 
+import argparse
 import random
 from DIPPID import SensorUDP
 from assets_loader import SoundHandler, ImageHandler
@@ -34,7 +35,9 @@ random.seed(42)  # set a random seed to make the game deterministic while testin
 # noinspection PyAttributeOutsideInit
 class SuperDippidBoy:
 
-    def __init__(self, dippid_port=5700):
+    def __init__(self, debug_active: bool, dippid_port=5700):
+        self.debug = debug_active
+
         # init dippid  # TODO error handling
         self.dippid_sensor = SensorUDP(dippid_port)
 
@@ -122,9 +125,10 @@ class SuperDippidBoy:
         while self.is_running:
             # make sure the game doesn't run faster than the defined frames per second
             self.clock.tick(FPS)
-            # current_fps = self.clock.get_fps()
-            # print(f"Current FPS: {current_fps}")
 
+            # if self.debug:
+            #     current_fps = self.clock.get_fps()
+            #     print(f"Current FPS: {current_fps}")
             self.handle_events()
 
             self.check_player_movement()
@@ -134,7 +138,6 @@ class SuperDippidBoy:
             # TODO show gesture on separate thread so main loop time isn't blocked by this?
             if self.show_gesture and len(self.gesture_points) > 2:  # we need at least two points to draw a line
                 draw_gesture(self.screen, self.gesture_points)
-                # pygame.time.set_timer(HIDE_GESTURE_EVENT, 500)  # hide gesture after 500 ms
 
             self.update_score()
             self.check_collisions()
@@ -157,13 +160,13 @@ class SuperDippidBoy:
                     self.is_running = False
 
             elif event.type == KEYUP:
-                if event.key == pygame.K_w or event.key == pygame.K_s:
-                    self.main_character.change_movement(angle=0)  # TODO for debugging only
+                if self.debug and (event.key == pygame.K_w or event.key == pygame.K_s):
+                    self.main_character.change_movement(angle=0)
 
             elif event.type == MOUSEBUTTONDOWN:
                 if event.button == 1:
                     print("Left mouse button pressed")
-                    # started drawing gesture
+                    # started to draw gesture
                     self.is_drawing = True
                     self.show_gesture = True
                     self.gesture_points = []  # reset the points
@@ -176,7 +179,6 @@ class SuperDippidBoy:
                     self.is_drawing = False
                     self.show_gesture = False
                     predicted_gesture = self.gesture_recognizer.predict_gesture(self.gesture_points)
-                    # print(f"\n########Predicted gesture in main: {predicted_gesture}\n#########\n")
                     self.main_character.set_current_form(predicted_gesture)
 
             elif event.type == MOUSEMOTION:
@@ -216,12 +218,12 @@ class SuperDippidBoy:
             self.main_character.change_movement(angle=0)
         """
 
-        # TODO only for easier debugging:
-        keys = pygame.key.get_pressed()  # checking pressed keys
-        if keys[pygame.K_w]:
-            self.main_character.change_movement(angle=-10)
-        elif keys[pygame.K_s]:
-            self.main_character.change_movement(angle=10)
+        if self.debug:
+            keys = pygame.key.get_pressed()  # checking pressed keys
+            if keys[pygame.K_w]:
+                self.main_character.change_movement(angle=-10)
+            elif keys[pygame.K_s]:
+                self.main_character.change_movement(angle=10)
 
     def move_background(self):
         # draw background (erases everything from previous frame; quite inefficient but works for now)
@@ -254,10 +256,12 @@ class SuperDippidBoy:
         # update the main character
         self.main_character.update()
         self.screen.blit(self.main_character.image, self.main_character.rect)
-        # TODO debug: show hitbox of player character
-        hitbox = (self.main_character.rect.x, self.main_character.rect.y, self.main_character.rect.width,
-                  self.main_character.rect.height)
-        pygame.draw.rect(self.screen, (255, 0, 0), hitbox, 2)
+
+        if self.debug:
+            # show player hitbox in debug mode
+            hitbox = (self.main_character.rect.x, self.main_character.rect.y, self.main_character.rect.width,
+                      self.main_character.rect.height)
+            pygame.draw.rect(self.screen, (255, 0, 0), hitbox, 2)
 
     def update_score(self):
         text_surface = self.font.render(f"Score: {self.current_points}", True, (255, 0, 0))
@@ -300,10 +304,22 @@ class SuperDippidBoy:
 
 
 def main():
+    port = args.port
+    debug_mode_enabled = args.debug
+
     pygame.init()  # setup and initialize pygame
-    game = SuperDippidBoy()
+    game = SuperDippidBoy(debug_active=debug_mode_enabled, dippid_port=port)
     game.show_start_screen()
 
 
 if __name__ == "__main__":
+    # setup an argument parser to enable command line parameters
+    parser = argparse.ArgumentParser(description="Small gesture-based 2D-Side-Scroller made with pygame where the main "
+                                                 "character can be controlled via a DIPPID device.")
+    parser.add_argument("-d", "--debug", help="Enable debug mode: shows the player hitbox and adds a menu option where "
+                                              "new gestures can be added", action="store_true", default=False)
+    parser.add_argument("-p", "--port", help="The port on which the DIPPID device sends the data", type=int,
+                        default=5700, required=False)
+    args = parser.parse_args()
+
     main()
