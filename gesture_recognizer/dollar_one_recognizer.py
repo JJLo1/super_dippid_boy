@@ -8,6 +8,7 @@ interface software and technology (pp. 159-168).
 import json
 import pathlib
 import sys
+from typing import Optional
 import numpy as np
 from gesture_recognizer.dollar_one_utils import calc_dist_at_best_angle, calc_path_length, calc_euclidean_distance, \
     get_bounding_box, calc_centroid, rotate_by
@@ -34,7 +35,7 @@ class DollarOneRecognizer:
             sys.stderr.write(f"Gesture file '{self.GESTURE_FILE_NAME}' does not exist yet!")
             return {}
 
-    def save_gesture(self, gesture_name, gesture_points):
+    def save_gesture(self, gesture_name, gesture_points) -> Optional[bool]:
         # normalize gesture before saving so it doesn't have to be done everytime again when trying to predict something
         normalized_gesture = self._normalize(gesture_points)
 
@@ -42,15 +43,17 @@ class DollarOneRecognizer:
             print(f"A gesture with the name '{gesture_name}' does already exist!")
             answer = input("Do you want to overwrite it? [y/n]\n")
             if str.lower(answer) == "y" or "yes":
-                self.existing_gestures[gesture_name] = normalized_gesture
+                self.existing_gestures[gesture_name] = {"original": gesture_points, "normalized": normalized_gesture}
             else:
                 print("\nSaving gesture cancelled.")
                 return
         else:
-            self.existing_gestures[gesture_name] = normalized_gesture
+            self.existing_gestures[gesture_name] = {"original": gesture_points, "normalized": normalized_gesture}
 
         with open(self.__gesture_file_path, 'w') as f:
             json.dump(self.existing_gestures, f, indent=2)  # the indent parameter makes the file more human-readable
+
+        return True
 
     def predict_gesture(self, input_points):
         if len(input_points) < 2:
@@ -68,7 +71,7 @@ class DollarOneRecognizer:
             return None
 
     def get_all_gestures(self):
-        return self.existing_gestures.items()
+        return self.existing_gestures
 
     def _resample_points(self, original_points: list):
         """
@@ -164,12 +167,13 @@ class DollarOneRecognizer:
         T_new = None
         b = np.inf
         for template_name, template_data in self.existing_gestures.items():
-            if len(template_data) != len(points):
+            normalized_data = template_data["normalized"]
+            if len(normalized_data) != len(points):
                 sys.stderr.write(f"Template {template_name} doesn't have the same size as the drawn gesture!")
                 continue
 
             # angle values based on the original paper from Wobbrock et al.:
-            dist = calc_dist_at_best_angle(points, template_data, -45, 45, 2)
+            dist = calc_dist_at_best_angle(points, normalized_data, -45, 45, 2)
             if dist < b:
                 b = dist
                 T_new = template_name

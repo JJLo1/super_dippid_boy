@@ -4,10 +4,14 @@
 import argparse
 import random
 import sys
+
+import numpy as np
+
 from DIPPID import SensorUDP
 from assets_loader import SoundHandler, ImageHandler
 from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS
 from game_utils import draw_gesture
+from gate_type import GateType
 from obstacle import Obstacle, SharedObstacleState
 from gesture_recognizer.dollar_one_recognizer import DollarOneRecognizer
 from player_character import PlayerCharacter
@@ -29,7 +33,6 @@ if not pygame.font:
     raise SystemExit("[Error]: Pygame Fonts disabled")
 if not pygame.mixer:
     raise SystemExit("[Error]: Pygame Sound disabled")
-
 
 random.seed(42)  # set a random seed to make the game deterministic while testing
 
@@ -75,43 +78,118 @@ class SuperDippidBoy:
         # (or flipped) for the changes to become visible:
         pygame.display.flip()
 
+    def create_add_gesture_submenu(self):
+        # create submenu to add a new gesture
+        self.add_gesture_submenu = pygame_menu.Menu('Add new gesture', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    menu_id="add_gesture_submenu",
+                                                    theme=pygame_menu.themes.THEME_SOLARIZED)
+        self.add_gesture_submenu.add.label("Draw the gesture:", max_char=-1, font_size=20, border_width=0)
+        new_gesture_surface = pygame.Surface((SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+        self.draw_area_rect = new_gesture_surface.get_rect()
+        self.draw_area_rect.x = SCREEN_WIDTH / 2 - self.draw_area_rect.width / 2
+        self.draw_area_rect.y = SCREEN_HEIGHT / 2 - self.draw_area_rect.height / 2
+        new_gesture_surface.fill((255, 255, 255))
+        self.add_gesture_submenu.add.surface(new_gesture_surface)
+        self.add_gesture_submenu.add.vertical_margin(15)
+        self.new_gesture_name = ""
+        self.add_gesture_submenu.add.text_input("Enter gesture name: ", border_width=0, maxchar=25,
+                                                input_underline_len=33,
+                                                padding=(5, 5, 5, 5), input_underline='_',
+                                                onchange=self.on_gesture_name_change)
+        self.add_gesture_submenu.add.button('Save gesture', self.add_new_gesture)
+        self.new_gesture_success_label = self.add_gesture_submenu.add.label('Gesture successfully saved!') \
+            .update_font({"color": (0, 255, 0), "size": 14})
+        self.new_gesture_success_label.hide()
+        self.new_gesture_error_label = self.add_gesture_submenu.add.label(
+            'Saving gesture failed! Check the terminal output.').update_font({"color": (255, 0, 0), "size": 14})
+        self.new_gesture_error_label.hide()
+
+    def create_available_gestures_submenu(self):
+        all_gestures = self.gesture_recognizer.get_all_gestures()
+        if all_gestures:
+            self.available_gestures_submenu = pygame_menu.Menu('Available gestures', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                               menu_id="show_gestures_submenu",
+                                                               theme=pygame_menu.themes.THEME_SOLARIZED,
+                                                               columns=len(all_gestures),
+                                                               rows=2)
+            drawing_size_x = 1 / 4
+            drawing_size_y = 1 / 2
+            for gesture in GateType.values():
+                self.available_gestures_submenu.add.label(gesture.capitalize(), font_size=30, border_width=0)
+                gesture_surface = pygame.Surface((SCREEN_WIDTH * drawing_size_x, SCREEN_HEIGHT * drawing_size_y))
+                gesture_surface.fill((255, 255, 255))
+                self.available_gestures_submenu.add.surface(gesture_surface)
+                gesture_data = all_gestures.get(gesture)
+                if not gesture_data:
+                    sys.stderr.write(f"Gesture data for gesture '{gesture}' not found!\n")
+                    break
+                points = gesture_data["original"]
+                if len(points) > 2:
+                    # calculate the new point coordinates for the gestures (that were drawn on the whole screen size) by
+                    # multiplying each point with the drawing size factor so we get the exact relative position in the
+                    # smaller area
+                    points = [np.array(point) * np.array([drawing_size_x, drawing_size_y]) for point in points]
+                    draw_gesture(gesture_surface, points)
+        else:
+            self.available_gestures_submenu = pygame_menu.Menu('Available gestures', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                               menu_id="show_gestures_submenu",
+                                                               theme=pygame_menu.themes.THEME_SOLARIZED)
+            self.available_gestures_submenu.add.label("No gestures available!", font_size=50, border_width=0)
+
+    def create_sources_submenu(self):
+        # create a small submenu to show the game's asset sources
+        self.sources_submenu = pygame_menu.Menu('Sources', SCREEN_WIDTH, SCREEN_HEIGHT, center_content=False,
+                                                menu_id="sources_submenu", theme=pygame_menu.themes.THEME_SOLARIZED)
+        self.sources_submenu.add.label("Used Assets:", font_size=30, border_width=0)
+        self.sources_submenu.add.label("\n- Forest Background Image by edermunizz ("
+                                       "https://edermunizz.itch.io/free-pixel-art-forest)"
+                                       "\n- Mysterious Harp Loop Music by \"VWolfdog\" ("
+                                       "https://opengameart.org/content/soft-mysterious-harp-loop)"
+                                       "\n- Wooden Material by \"yamachem\" ("
+                                       "https://openclipart.org/detail/226666/flooring-material-02)",
+                                       font_size=20, border_width=0)
+        # self.sources_submenu.add.button('Return to main menu', pygame_menu.events.BACK)
+
+    def create_main_menu(self):
+        self.main_menu = pygame_menu.Menu('Welcome to SUPER DIPPID BOY', SCREEN_WIDTH, SCREEN_HEIGHT,
+                                          theme=pygame_menu.themes.THEME_SOLARIZED)
+        self.main_menu.add.button('Play', self.start_game)
+        if self.debug:
+            self.main_menu.add.button('Add gesture', self.show_submenu, self.add_gesture_submenu)
+        self.main_menu.add.button('Show available gestures', self.show_submenu, self.available_gestures_submenu)
+        self.main_menu.add.button('Sources', self.show_submenu, self.sources_submenu)
+        self.main_menu.add.button('Quit', pygame_menu.events.EXIT)
+
+    def show_submenu(self, menu):
+        # flag to check whether we are in the add gesture submenu or not; used in the menu event loop to check if
+        # drawing a gesture with the mouse should be allowed or not so we react to mouse events only in this submenu
+        if self.debug:
+            if menu.get_id() == self.add_gesture_submenu.get_id():
+                self.in_add_gesture_submenu = True
+            else:
+                self.in_add_gesture_submenu = False
+                self.new_gesture_success_label.hide()
+                self.new_gesture_error_label.hide()
+
+        # protected member access is necessary as we can't open the submenu otherwise if we want to perform an
+        # action before, like setting a flag
+        self.main_menu._open(menu)
+
     def on_gesture_name_change(self, current_text):
         self.new_gesture_name = current_text
 
     def show_start_screen(self):
         self.new_gesture = []
         is_drawing = False
+        self.in_add_gesture_submenu = False
 
-        # create submenu
-        add_gesture_submenu = pygame_menu.Menu('Add new gesture', SCREEN_WIDTH, SCREEN_HEIGHT,
-                                               theme=pygame_menu.themes.THEME_SOLARIZED)
-        add_gesture_submenu.add.label("Draw the gesture:", max_char=-1, font_size=20, border_width=0)
-        draw_surface = pygame.Surface((SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
-        draw_surface.fill((255, 255, 255))
-        add_gesture_submenu.add.surface(draw_surface)
-        add_gesture_submenu.add.vertical_margin(40)
-        self.new_gesture_name = ""
-        add_gesture_submenu.add.text_input("Enter gesture name: ", default="rectangle", maxchar=12, border_width=0,
-                                           input_underline='_', onchange=self.on_gesture_name_change)
-
-        add_gesture_submenu.add.button('Save gesture', self.add_new_gesture)
-        add_gesture_submenu.add.vertical_margin(20)
-        add_gesture_submenu.add.button('Return to main menu', pygame_menu.events.BACK)
-
-        # create another submenu
-        show_gestures_submenu = pygame_menu.Menu('All available gestures', SCREEN_WIDTH, SCREEN_HEIGHT,
-                                                 theme=pygame_menu.themes.THEME_SOLARIZED)
-        all_gestures = self.gesture_recognizer.get_all_gestures()
-        # TODO show them in a grid menu: column = label + surface/frame with drawing
-
-        # main menu screen
-        self.main_menu = pygame_menu.Menu('Welcome to SUPER DIPPID BOY', SCREEN_WIDTH, SCREEN_HEIGHT,
-                                          theme=pygame_menu.themes.THEME_SOLARIZED)
-        self.main_menu.add.button('Play', self.start_game)
-        # TODO if self.debug:
-        self.main_menu.add.button('Add gesture', add_gesture_submenu)
-        self.main_menu.add.button('Show available gestures', show_gestures_submenu)
-        self.main_menu.add.button('Quit', pygame_menu.events.EXIT)
+        # create submenus
+        if self.debug:
+            self.create_add_gesture_submenu()
+        self.create_available_gestures_submenu()
+        self.create_sources_submenu()
+        # create main menu screen
+        self.create_main_menu()
 
         # menu event loop; we break out of it while playing the game and return to it after the game ends
         game_running = True
@@ -120,28 +198,29 @@ class SuperDippidBoy:
             for event in events:
                 if event.type == pygame.QUIT:
                     game_running = False
+
+                # the mouse events below are only used in debug mode to add new gestures!
                 elif event.type == MOUSEBUTTONDOWN:
-                    if event.button == 1:
-                        # Check if the mouse position is inside the draw area, otherwise ignore! Without this check
-                        # we couldn't click anywhere without resetting the gesture points too!
-                        draw_area = draw_surface.get_rect()
-                        if (draw_area.left <= pygame.mouse.get_pos()[0] <= draw_area.right) \
-                                and (draw_area.top <= pygame.mouse.get_pos()[1] <= draw_area.bottom):
-                            # started drawing gesture
+                    if self.debug and event.button == 1 and self.in_add_gesture_submenu:
+                        # Check if the mouse position is inside the draw area, otherwise ignore it. Without this check
+                        # we couldn't click anywhere without resetting the gesture points as well!
+                        if (self.draw_area_rect.left <= pygame.mouse.get_pos()[0] <= self.draw_area_rect.right) and \
+                                (self.draw_area_rect.top <= pygame.mouse.get_pos()[1] <= self.draw_area_rect.bottom):
                             is_drawing = True
                             self.new_gesture = []  # reset the points
                 elif event.type == MOUSEBUTTONUP:
-                    if event.button == 1:  # if the left mouse button was released
+                    if self.debug and event.button == 1:  # if the left mouse button was released
                         is_drawing = False
                 elif event.type == MOUSEMOTION:
-                    if is_drawing:
+                    if self.debug and is_drawing and self.in_add_gesture_submenu:
                         self.new_gesture.append((pygame.mouse.get_pos()))
 
             if self.main_menu.is_enabled():
                 self.main_menu.update(events)
                 self.main_menu.draw(self.screen)
 
-                if len(self.new_gesture) > 2:  # we need at least two points to draw a line
+                # in debug mode: show the new added gestures
+                if self.debug and len(self.new_gesture) > 2:  # we need at least two points to draw a line
                     draw_gesture(self.screen, self.new_gesture)
 
             pygame.display.flip()
@@ -153,16 +232,23 @@ class SuperDippidBoy:
         # check if a name was given for this gesture
         if self.new_gesture_name == "" or self.new_gesture_name.isspace():
             sys.stderr.write("\nThe gesture needs a name!")
+            self.toggle_save_gesture_status(False)
             return
         elif len(self.new_gesture) < 2:
             sys.stderr.write(f"\nMore points for the gesture needed! Currently {len(self.new_gesture)} points.")
+            self.toggle_save_gesture_status(False)
             return
 
-        self.gesture_recognizer.save_gesture(self.new_gesture_name, self.new_gesture)
+        status = self.gesture_recognizer.save_gesture(self.new_gesture_name, self.new_gesture)
+        self.toggle_save_gesture_status(True) if status else self.toggle_save_gesture_status(False)
 
-    def show_available_gestures(self):
-        # TODO show names and draw gesture in a small window below each name
-        pass
+    def toggle_save_gesture_status(self, success: bool):
+        if success:
+            self.new_gesture_error_label.hide()
+            self.new_gesture_success_label.show()
+        else:
+            self.new_gesture_success_label.hide()
+            self.new_gesture_error_label.show()
 
     def start_game(self):
         self.main_menu.disable()
@@ -269,6 +355,7 @@ class SuperDippidBoy:
                     self.is_drawing = False
                     self.show_gesture = False
                     predicted_gesture = self.gesture_recognizer.predict_gesture(self.gesture_points)
+                    # TODO nur wenn score groß genug ist, auch tatsächlich die Form ändern!
                     self.main_character.set_current_form(predicted_gesture)
 
             elif event.type == MOUSEMOTION:
@@ -292,6 +379,7 @@ class SuperDippidBoy:
             elif event.type == self.UPDATE_SCORE_EVENT:
                 self.current_points += 5
 
+    # TODO steuerung über menü dropdown
     def check_player_movement(self):
         if "gravity" in self.dippid_sensor.get_capabilities():
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')['x'])
@@ -362,8 +450,8 @@ class SuperDippidBoy:
         if pygame.sprite.spritecollideany(self.main_character, self.wall_collidables):
             # If so, then remove the player and stop the loop
             print("Player collided with wall! Game over!")
-            self.main_character.kill()
-            self.is_running = False
+            # self.main_character.kill()
+            # self.is_running = False
             # TODO show 'You Died' - Message :)
 
         # if pygame.sprite.spritecollideany(main_character, self.gate_collidables, check_gate_collision):
@@ -399,6 +487,8 @@ class SuperDippidBoy:
 def main():
     port = args.port
     debug_mode_enabled = args.debug
+    if debug_mode_enabled:
+        print("[INFO]: You are in DEBUG mode at the moment!")
 
     pygame.init()  # setup and initialize pygame
     game = SuperDippidBoy(debug_active=debug_mode_enabled, dippid_port=port)
