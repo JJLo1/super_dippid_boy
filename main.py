@@ -236,6 +236,18 @@ class SuperDippidBoy:
         self.main_menu = pygame_menu.Menu('Welcome to SUPER DIPPID BOY', SCREEN_WIDTH, SCREEN_HEIGHT,
                                           theme=pygame_menu.themes.THEME_SOLARIZED)
 
+        # show connection status of the dippid device; if not connected also show a button to try to re-connect
+        self.dippid_connected_label = self.main_menu.add.label("Dippid Device successfully connected!", font_size=25,
+                                                               border_width=0).update_font({"color": (51, 153, 51)})
+        self.dippid_not_connected_label = self.main_menu.add.label("Dippid Device not connected!", font_size=25,
+                                                                   border_width=0).update_font({"color": (255, 0, 0)})
+        self.reconnect_button = self.main_menu.add.button('Connect again', self.check_dippid_connection)
+        self.dippid_not_connected_label.hide()
+        self.dippid_connected_label.hide()
+        self.reconnect_button.hide()
+        self.check_dippid_connection()  # check if the dippid device is connected
+        self.main_menu.add.vertical_margin(50)
+
         # show a dropdown to let the user select the axis around which the DIPPID device should be rotated to control
         # the character
         self.dippid_axis = "x"
@@ -266,6 +278,23 @@ class SuperDippidBoy:
         # protected member access is necessary as we can't open the submenu otherwise if we want to perform an
         # action before, like setting a flag
         self.main_menu._open(menu)
+
+    def show_dippid_connection_status(self):
+        if self.has_connection:
+            self.dippid_not_connected_label.hide()
+            self.reconnect_button.hide()
+            self.dippid_connected_label.show()
+        else:
+            self.dippid_connected_label.hide()
+            self.dippid_not_connected_label.show()
+            self.reconnect_button.show()
+
+    def check_dippid_connection(self):
+        # TODO this works only once! After one successfull connect we cannot determine if the connection was lost again!
+        capabilities_ready = all(self.dippid_sensor.has_capability(capability)
+                                 for capability in ["gravity", "accelerometer"])
+        self.has_connection = True if capabilities_ready else False
+        self.show_dippid_connection_status()
 
     def on_axis_changed(self, selected_item):
         self.dippid_axis = selected_item[0]  # we get a tuple with (value, index_position)
@@ -436,7 +465,7 @@ class SuperDippidBoy:
         if "gravity" in self.dippid_sensor.get_capabilities():
             # dippid device is smartphone
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')[self.dippid_axis])
-        # TODO: check if "angle" is bugged on m5stack, since the values seemed strange
+        # FIXME: convert angle values to the same range as gravity! (angles are between -180 and 180 -> /18 ?)
         elif "angle" in self.dippid_sensor.get_capabilities():
             # dippid device is m5stack
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('angle')[self.dippid_axis])
@@ -583,8 +612,11 @@ class SuperDippidBoy:
 
     def end_game(self):
         pygame.mixer.quit()
-        # TODO check that dippid_sensor was successfully connected! -> some error handling for dippid
-        self.dippid_sensor.disconnect()  # stop dippid sensor
+
+        if self.has_connection:
+            # TODO if the dippid device isn't connected anymore, joining the thread blocks forever
+            self.dippid_sensor.disconnect()  # stop dippid sensor if it is connected
+
         pygame.quit()  # quit pygame
         sys.exit(0)  # necessary if we quit in a nested while loop (i.e. during the game or the end screen)
 
