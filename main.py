@@ -217,7 +217,16 @@ class SuperDippidBoy:
         # the first screen of the application
         self.main_menu = pygame_menu.Menu('Welcome to SUPER DIPPID BOY', SCREEN_WIDTH, SCREEN_HEIGHT,
                                           theme=pygame_menu.themes.THEME_SOLARIZED)
+
+        # show a dropdown to let the user select the axis around which the DIPPID device should be rotated to control
+        # the character
+        self.dippid_axis = "x"
+        self.main_menu.add.dropselect(title='Choose DIPPID axis: ', items=['x', 'y', 'z'], font_size=20, default=0,
+                                      selection_box_height=5, onchange=self.on_axis_changed)
+        self.main_menu.add.vertical_margin(5)
+
         self.main_menu.add.button('Play', self.start_game)
+        self.main_menu.add.vertical_margin(50)
         if self.debug:
             self.main_menu.add.button('Add gesture', self.show_submenu, self.add_gesture_submenu)
         self.main_menu.add.button('Show available gestures', self.show_submenu, self.available_gestures_submenu)
@@ -239,6 +248,9 @@ class SuperDippidBoy:
         # protected member access is necessary as we can't open the submenu otherwise if we want to perform an
         # action before, like setting a flag
         self.main_menu._open(menu)
+
+    def on_axis_changed(self, selected_item):
+        self.dippid_axis = selected_item[0]  # we get a tuple with (value, index_position)
 
     def on_gesture_name_change(self, current_text):
         self.new_gesture_name = current_text
@@ -402,15 +414,15 @@ class SuperDippidBoy:
     # TODO steuerung über menü dropdown
     def check_player_movement(self):
         if "gravity" in self.dippid_sensor.get_capabilities():
-            self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')['x'])
+            self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')[self.dippid_axis])
         # TODO: check if "angle" is bugged on m5stack, since the values seemed strange
         elif "angle" in self.dippid_sensor.get_capabilities():
-            self.main_character.change_movement(angle=self.dippid_sensor.get_value('angle')['x'])
+            self.main_character.change_movement(angle=self.dippid_sensor.get_value('angle')[self.dippid_axis])
         """
         # alternative:
-        if self.dippid_sensor.get_value('gravity')['y'] > 1:
+        if self.dippid_sensor.get_value('gravity')[self.dippid_axis] > 1:
             self.main_character.change_movement(angle=5)
-        elif dippid.get_value('gravity')['y'] < -1:
+        elif dippid.get_value('gravity')[self.dippid_axis] < -1:
             self.main_character.change_movement(angle=-5)
         else:
             self.main_character.change_movement(angle=0)
