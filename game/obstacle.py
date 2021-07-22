@@ -1,7 +1,7 @@
 import random
 import pygame
-from game_settings import SCREEN_HEIGHT, OBSTACLE_DEFAULT_MOVEMENT_SPEED
-from gate_type import GateType
+from game.game_settings import SCREEN_HEIGHT, OBSTACLE_DEFAULT_MOVEMENT_SPEED
+from game.gate_type import GateType
 
 
 class SharedObstacleState:

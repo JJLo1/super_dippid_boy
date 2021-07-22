@@ -2,7 +2,7 @@ import os
 from PyQt5 import QtMultimedia
 from PyQt5.QtCore import QUrl
 import pygame
-from game_settings import BACKGROUND_MUSIC, BACKGROUND_IMAGE
+from game.game_settings import BACKGROUND_MUSIC, BACKGROUND_IMAGE
 
 
 class SoundHandler:
@@ -46,6 +46,7 @@ class SoundHandler:
             return
         sound.fadeout(3)
     '''
+
     def get_full_path_for_sound_file(self, filename):
         rel_path = os.path.join("assets", filename)
         abs_path = os.path.abspath(rel_path)

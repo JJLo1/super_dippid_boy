@@ -1,20 +1,15 @@
-#!/usr/bin/python3
-# -*- coding:utf-8 -*-
-
-import argparse
 import os
-import random
 import sys
 import numpy as np
 from DIPPID import SensorUDP
-from assets_loader import SoundHandler, ImageHandler
-from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BACKGROUND_MUSIC, BACKGROUND_MOVEMENT_SPEED, \
-    BORDER_HEIGHT
-from game_utils import draw_gesture
-from gate_type import GateType
-from obstacle import Obstacle, SharedObstacleState
+from game.assets_loader import SoundHandler, ImageHandler
+from game.game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BACKGROUND_MUSIC, \
+    BACKGROUND_MOVEMENT_SPEED, BORDER_HEIGHT
+from game.game_utils import draw_gesture
+from game.gate_type import GateType
+from game.obstacle import Obstacle, SharedObstacleState
 from gesture_recognizer.dollar_one_recognizer import DollarOneRecognizer
-from player_character import PlayerCharacter
+from game.player_character import PlayerCharacter
 import pygame
 import pygame_menu
 # pygame.locals puts a set of useful constants and functions into the global namespace of this script
@@ -28,15 +23,7 @@ from pygame.locals import (
     QUIT,
 )
 
-# check imports
-if not pygame.font:
-    raise SystemExit("[Error]: Pygame Fonts disabled")
-if not pygame.mixer:
-    raise SystemExit("[Error]: Pygame Sound disabled")
 
-
-# TODO move the SuperDippidBoy class to a 'game.py' file and rename this one to 'system_demo.py', so all game related
-#  files can go into their own subfolder
 # noinspection PyAttributeOutsideInit
 class SuperDippidBoy:
 
@@ -46,7 +33,7 @@ class SuperDippidBoy:
         self.highscore_file_path = os.path.join("assets", "highscore.txt")
         self.load_highscore()
 
-        # init dippid  # TODO error handling  -> show status in main menu and add button to reconnect if not connected
+        # init dippid
         self.dippid_sensor = SensorUDP(dippid_port)
 
         # init gesture recognizer
@@ -229,7 +216,6 @@ class SuperDippidBoy:
                                        "\n- Rainy Village Music by \"TAD\" ("
                                        "https://opengameart.org/content/rainy-village)",
                                        font_size=20, border_width=0)
-        # self.sources_submenu.add.button('Return to main menu', pygame_menu.events.BACK)
 
     def create_main_menu(self):
         # the first screen of the application
@@ -290,7 +276,7 @@ class SuperDippidBoy:
             self.reconnect_button.show()
 
     def check_dippid_connection(self):
-        # TODO this works only once! After one successfull connect we cannot determine if the connection was lost again!
+        # this works only once! After one successful connect we cannot determine if the connection was lost again!
         capabilities_ready = all(self.dippid_sensor.has_capability(capability)
                                  for capability in ["gravity", "accelerometer"])
         self.has_connection = True if capabilities_ready else False
@@ -469,15 +455,6 @@ class SuperDippidBoy:
         elif "angle" in self.dippid_sensor.get_capabilities():
             # dippid device is m5stack
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('angle')[self.dippid_axis])
-        """
-        # alternative:
-        if self.dippid_sensor.get_value('gravity')[self.dippid_axis] > 1:
-            self.main_character.change_movement(angle=5)
-        elif dippid.get_value('gravity')[self.dippid_axis] < -1:
-            self.main_character.change_movement(angle=-5)
-        else:
-            self.main_character.change_movement(angle=0)
-        """
 
         if self.debug:
             # in debug mode the user can also use 'w' and 's' to control the vertical movement of the player character
@@ -534,8 +511,8 @@ class SuperDippidBoy:
         if pygame.sprite.spritecollideany(self.main_character, self.wall_collidables):
             # If so, then remove the player and stop the loop
             print("Player collided with wall! Game over!")
-            #self.main_character.kill()
-            #self.is_running = False
+            self.main_character.kill()
+            self.is_running = False
 
         gate_sprite = pygame.sprite.spritecollideany(self.main_character, self.gate_collidables)
         if gate_sprite and not gate_sprite.has_already_collided():  # linter warnings are wrong here, just ignore them
@@ -620,32 +597,5 @@ class SuperDippidBoy:
             # TODO if the dippid device isn't connected anymore, joining the thread blocks forever
             self.dippid_sensor.disconnect()  # stop dippid sensor if it is connected
         """
-
         pygame.quit()  # quit pygame
         sys.exit(0)  # necessary if we quit in a nested while loop (i.e. during the game or the end screen)
-
-
-def main():
-    port = args.port
-    debug_mode_enabled = args.debug
-    if debug_mode_enabled:
-        print("[INFO]: You are in DEBUG mode at the moment!")
-        random.seed(42)  # set a random seed to make the game deterministic while testing
-
-    pygame.init()  # setup and initialize pygame
-    game = SuperDippidBoy(debug_active=debug_mode_enabled, dippid_port=port)
-    game.show_start_screen()
-
-
-if __name__ == "__main__":
-    # setup an argument parser to enable command line parameters
-    parser = argparse.ArgumentParser(description="Small gesture-based 2D-Side-Scroller made with pygame where the main "
-                                                 "character can be controlled via a DIPPID device.")
-    parser.add_argument("-d", "--debug", help="Enable debug mode: shows the player's hitbox and allows controlling "
-                                              "the main character with 'w' and 's'. Also adds a menu option "
-                                              "where new gestures can be added", action="store_true", default=False)
-    parser.add_argument("-p", "--port", help="The port on which the DIPPID device sends the data", type=int,
-                        default=5700, required=False)
-    args = parser.parse_args()
-
-    main()

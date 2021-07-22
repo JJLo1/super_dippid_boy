@@ -1,7 +1,7 @@
 import pygame
-from assets_loader import ImageHandler
-from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT, BORDER_HEIGHT
-from gate_type import GateType
+from game.assets_loader import ImageHandler
+from game.game_settings import SCREEN_WIDTH, SCREEN_HEIGHT, BORDER_HEIGHT
+from game.gate_type import GateType
 
 
 class PlayerCharacter(pygame.sprite.Sprite):
