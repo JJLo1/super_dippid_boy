@@ -1,6 +1,6 @@
 import random
 import pygame
-from game_settings import SCREEN_HEIGHT
+from game_settings import SCREEN_HEIGHT, OBSTACLE_DEFAULT_MOVEMENT_SPEED
 from gate_type import GateType
 
 
@@ -8,11 +8,15 @@ class SharedObstacleState:
     # The obstacle speed needs to be updated for the obstacle class as well as the wall and gate classes at the
     # same time and letting Gate and Wall inherit from Obstacle would violate the Liskov substitution principle.
     # Because of this the 'SharedObstacleState' class acts as a "state-holder" that mediates shared states.
-    obstacle_move_speed = 3.5
+    obstacle_move_speed = OBSTACLE_DEFAULT_MOVEMENT_SPEED
 
     @classmethod
     def increase_move_speed(cls):
         cls.obstacle_move_speed += 0.5  # TODO probably too much, 0.2 instead?
+
+    @classmethod
+    def reset_move_speed(cls):
+        cls.obstacle_move_speed = OBSTACLE_DEFAULT_MOVEMENT_SPEED
 
 
 class Gate(pygame.sprite.Sprite, SharedObstacleState):
@@ -23,6 +27,8 @@ class Gate(pygame.sprite.Sprite, SharedObstacleState):
     def __init__(self, image_handler, x_pos, y_pos, width, height, gate_type: GateType):
         pygame.sprite.Sprite.__init__(self)
         self.gate_type = gate_type
+        # flag to check whether this gate has already collided with the player to prevent more than one collide hit
+        self.has_collided = False
 
         sprite_name = GateType.get_sprite_for_gate_type(gate_type)  # get the correct sprite for this gate type
         self.image = image_handler.get_image(sprite_name)
@@ -34,6 +40,12 @@ class Gate(pygame.sprite.Sprite, SharedObstacleState):
         self.rect.topleft = (x_pos, y_pos)
         self.rect.width = width
         self.rect.height = height
+
+    def set_collided(self):
+        self.has_collided = True
+
+    def has_already_collided(self):
+        return self.has_collided
 
     def get_gate_type(self):
         return self.gate_type
@@ -145,7 +157,7 @@ class Obstacle(pygame.sprite.Sprite, SharedObstacleState):
 
         # calculate the heights of the obstacle parts to fill the entire height of the column
         if self.number_of_gates == 0:
-            passage_height = random.randrange(60, 120)  # produce a pseudo random passage size
+            passage_height = random.randrange(80, 150)  # produce a pseudo random passage size
             wall_space = (self.obstacle_area_height - passage_height * self.number_of_passages)
             wall_height = wall_space / self.number_of_walls
             # print(f"wall_space: {wall_space}, passage_h: {passage_height}, wall_h: {wall_height}")
@@ -158,7 +170,9 @@ class Obstacle(pygame.sprite.Sprite, SharedObstacleState):
                 => column_height = gate_size * (2 * number_walls + number_gates)
                 => gate_size = column_height / (2 * number_walls + number_gates)
             '''
-            size_factor = 2  # walls are always twice as large as gates
+            # size_factor = 2  # walls are always twice as large as gates
+            # TODO set size factor based on the number of generated walls (and gates)
+            size_factor = 2 if self.number_of_walls > 1 else 3
             gate_height = (self.obstacle_area_height - self.gate_offset * self.number_of_gates) / (
                         self.number_of_walls * size_factor + self.number_of_gates)
             wall_height = size_factor * gate_height

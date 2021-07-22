@@ -14,15 +14,14 @@ class GateType(Enum):
 
     @staticmethod
     def get_sprite_for_gate_type(gate_type):
-        # TODO load different images
         if gate_type is GateType.TRIANGLE.value:
-            return "triangle.png"
+            return "gates/triangle.png"
         elif gate_type is GateType.CIRCLE.value:
-            return "portal.png"
+            return "gates/triangle.png"  # TODO replace with circle
         elif gate_type is GateType.LINE.value:
-            return "line.png"
+            return "gates/line.png"
         elif gate_type is GateType.RECTANGLE.value:
-            return "rectangle.png"
+            return "gates/rectangle.png"
         else:
-            print("[WARNING]: Unknown gate type! Using circle as default.")
-            return "portal.png"
+            print("[WARNING]: Unknown gate type! Using triangle as default.")
+            return "gates/triangle.png"

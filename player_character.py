@@ -1,6 +1,6 @@
 import pygame
 from assets_loader import ImageHandler
-from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT
+from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT, BORDER_HEIGHT
 from gate_type import GateType
 
 
@@ -52,8 +52,7 @@ class PlayerCharacter(pygame.sprite.Sprite):
         self.image = self.character_images[self.current_image_index]
 
     def _update_rotation(self):
-
-        self.rot = (self.rect.centery / (self.area.bottom-BORDER_HEIGHT*2))*180+180
+        self.rot = (self.rect.centery / (self.area.bottom - BORDER_HEIGHT * 2)) * 180 + 180
         new_image = pygame.transform.rotate(self.image, self.rot)
         new_rect = new_image.get_rect(center=self.image.get_rect(center=self.rect.center).center)
         self.image, self.rect = (new_image, new_rect)
@@ -61,7 +60,7 @@ class PlayerCharacter(pygame.sprite.Sprite):
     def _move(self):
         self.rect.move_ip((self.movement_x, self.movement_y))  # 'ip' makes the changes happen 'in-place'
         # make sure that the character cannot leave the game window
-        self.rect.clamp_ip((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 100))  # TODO magic numbers
+        self.rect.clamp_ip((0, BORDER_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - 2 * BORDER_HEIGHT))
 
     def get_current_form(self):
         # print(f"Returning current player form: {self.__current_form}")
