@@ -118,7 +118,8 @@ class SensorUDP(Sensor):
 
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._sock.bind((self._ip, self._port))
-        self._connection_thread = Thread(target=self._receive)
+        # make this a daemon thread so it automatically ends when the main thread stops
+        self._connection_thread = Thread(target=self._receive, daemon=True)
         self._connection_thread.start()
 
     def _receive(self):

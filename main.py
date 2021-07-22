@@ -613,9 +613,11 @@ class SuperDippidBoy:
     def end_game(self):
         pygame.mixer.quit()
 
+        """
         if self.has_connection:
             # TODO if the dippid device isn't connected anymore, joining the thread blocks forever
             self.dippid_sensor.disconnect()  # stop dippid sensor if it is connected
+        """
 
         pygame.quit()  # quit pygame
         sys.exit(0)  # necessary if we quit in a nested while loop (i.e. during the game or the end screen)
