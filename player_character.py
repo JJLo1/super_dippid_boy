@@ -60,7 +60,7 @@ class PlayerCharacter(pygame.sprite.Sprite):
     def _move(self):
         self.rect.move_ip((self.movement_x, self.movement_y))  # 'ip' makes the changes happen 'in-place'
         # make sure that the character cannot leave the game window
-        self.rect.clamp_ip((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 100))  # TODO magic numbers
+        self.rect.clamp_ip((0, BORDER_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT - 2 * BORDER_HEIGHT))
 
     def get_current_form(self):
         # print(f"Returning current player form: {self.__current_form}")

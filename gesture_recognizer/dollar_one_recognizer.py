@@ -21,7 +21,7 @@ class DollarOneRecognizer:
     NUM_RESAMPLED_POINTS = 64
     GESTURE_FILE_NAME = "gestures.json"
 
-    THRESHOLD = 3000  # threshold at which we reject a gesture prediction as too bad
+    THRESHOLD = 3500  # threshold at which we reject a gesture prediction as too bad
 
     def __init__(self):
         self.__gesture_file_path = pathlib.Path("gesture_recognizer") / self.GESTURE_FILE_NAME
