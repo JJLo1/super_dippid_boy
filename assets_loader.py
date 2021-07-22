@@ -48,8 +48,8 @@ class ImageHandler:
     Resource handling class for all the images used in the game. Loads all defined image assets on initialization.
     """
 
-    image_assets = ["slime.png", "slime-move.png", "wooden_material.png", "portal.png", "line.png", "triangle.png",
-                    "rectangle.png"]
+    image_assets = ["slime.png", "slime-move.png", "wooden_material.png", "portal.png", "gates/line.png",
+                    "gates/triangle.png", "gates/rectangle.png"]
     image_dict = dict()
     assets_folder = "assets"
 

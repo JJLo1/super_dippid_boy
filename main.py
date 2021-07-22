@@ -8,7 +8,8 @@ import sys
 import numpy as np
 from DIPPID import SensorUDP
 from assets_loader import SoundHandler, ImageHandler
-from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BACKGROUND_MUSIC, BACKGROUND_MOVEMENT_SPEED
+from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BACKGROUND_MUSIC, BACKGROUND_MOVEMENT_SPEED, \
+    BORDER_HEIGHT
 from game_utils import draw_gesture
 from gate_type import GateType
 from obstacle import Obstacle, SharedObstacleState
@@ -308,7 +309,7 @@ class SuperDippidBoy:
 
         self.sound_handler.play_sound(BACKGROUND_MUSIC, play_infinite=True)  # start playing background music
 
-        self.main_character = PlayerCharacter(self.image_handler, self.sound_handler, graphics_folder="assets/Triangle")
+        self.main_character = PlayerCharacter(self.image_handler, self.sound_handler)
         self.obstacles = pygame.sprite.Group()  # for rendering all obstacles
         self.wall_collidables = pygame.sprite.Group()  # for collision detection
         self.gate_collidables = pygame.sprite.Group()
@@ -478,8 +479,8 @@ class SuperDippidBoy:
 
     def update_game_objects(self):
         # draw top and bottom border blocks
-        pygame.draw.rect(self.screen, (24, 61, 87), (0, 0, SCREEN_WIDTH, 49))
-        pygame.draw.rect(self.screen, (74, 59, 43), (0, SCREEN_HEIGHT - 49, SCREEN_WIDTH, 50))  # TODO remove bottom?
+        pygame.draw.rect(self.screen, (24, 61, 87), (0, 0, SCREEN_WIDTH, BORDER_HEIGHT))
+        pygame.draw.rect(self.screen, (74, 59, 43), (0, SCREEN_HEIGHT - BORDER_HEIGHT, SCREEN_WIDTH, BORDER_HEIGHT))
 
         # update obstacles
         self.obstacles.update()

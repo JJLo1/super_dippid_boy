@@ -21,6 +21,8 @@ class DollarOneRecognizer:
     NUM_RESAMPLED_POINTS = 64
     GESTURE_FILE_NAME = "gestures.json"
 
+    THRESHOLD = 3000  # threshold at which we reject a gesture prediction as too bad
+
     def __init__(self):
         self.__gesture_file_path = pathlib.Path("gesture_recognizer") / self.GESTURE_FILE_NAME
         self.existing_gestures: dict = self._load_gesture_data()
@@ -66,7 +68,7 @@ class DollarOneRecognizer:
             best_template, score = recognition_result
             print(f"{best_template}   (Score / Probability: {score:.3f})")
             # only change the player form if the score is good enough, if not we keep the current form
-            if abs(score) < 4000:
+            if abs(score) < self.THRESHOLD:
                 return best_template
             else:
                 print(f"Gesture prediction didn't work well (score: {score}). Form wasn't changed!")
