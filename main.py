@@ -8,7 +8,7 @@ import sys
 import numpy as np
 from DIPPID import SensorUDP
 from assets_loader import SoundHandler, ImageHandler
-from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS
+from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BACKGROUND_MUSIC
 from game_utils import draw_gesture
 from gate_type import GateType
 from obstacle import Obstacle, SharedObstacleState
@@ -83,7 +83,6 @@ class SuperDippidBoy:
             # read in current highscore
             with open(self.highscore_file_path, "r") as highscore_file:
                 file_content = highscore_file.read()
-                print("Last high score: ", int(file_content))
                 self.highscore = int(file_content)
         else:
             # create new highscore file and init with 0
@@ -303,10 +302,11 @@ class SuperDippidBoy:
     # --------------------------------------------------------------------------
 
     def start_game(self):
+        # disable and reset the main menu while we are in the game
         self.main_menu.disable()
         self.main_menu.full_reset()
 
-        self.sound_handler.play_sound("mysterious_harp.mp3", play_infinite=True)  # start playing background music
+        self.sound_handler.play_sound(BACKGROUND_MUSIC, play_infinite=True)  # start playing background music
 
         self.main_character = PlayerCharacter(self.image_handler, self.sound_handler, graphics_folder="assets/Triangle")
         self.obstacles = pygame.sprite.Group()  # for rendering all obstacles
@@ -436,9 +436,11 @@ class SuperDippidBoy:
 
     def check_player_movement(self):
         if "gravity" in self.dippid_sensor.get_capabilities():
+            # dippid device is smartphone
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')[self.dippid_axis])
         # TODO: check if "angle" is bugged on m5stack, since the values seemed strange
         elif "angle" in self.dippid_sensor.get_capabilities():
+            # dippid device is m5stack
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('angle')[self.dippid_axis])
         """
         # alternative:
@@ -451,6 +453,7 @@ class SuperDippidBoy:
         """
 
         if self.debug:
+            # in debug mode the user can also use 'w' and 's' to control the vertical movement of the player character
             keys = pygame.key.get_pressed()  # checking pressed keys
             if keys[pygame.K_w]:
                 self.main_character.change_movement(angle=-10)
@@ -477,9 +480,9 @@ class SuperDippidBoy:
             self.background_rect.x = 0
 
     def update_game_objects(self):
-        # draw top and bottom border blocks  # TODO quite ugly at the moment
+        # draw top and bottom border blocks
         pygame.draw.rect(self.screen, (24, 61, 87), (0, 0, SCREEN_WIDTH, 49))
-        pygame.draw.rect(self.screen, (74, 59, 43), (0, SCREEN_HEIGHT - 49, SCREEN_WIDTH, 50))
+        pygame.draw.rect(self.screen, (74, 59, 43), (0, SCREEN_HEIGHT - 49, SCREEN_WIDTH, 50))  # TODO remove bottom?
 
         # update obstacles
         self.obstacles.update()
@@ -510,11 +513,11 @@ class SuperDippidBoy:
         gate_sprite = pygame.sprite.spritecollideany(self.main_character, self.gate_collidables)
         if gate_sprite:
             curr_form = self.main_character.get_current_form()
-            gate_form = gate_sprite.get_gate_type()
+            gate_form = gate_sprite.get_gate_type()  # linter warning is wrong here, just ignore it
             if curr_form == gate_form:
                 self.current_points += 20
             else:
-                print("Gate type:", gate_sprite.get_gate_type())  # linter warning is wrong here, just ignore it
+                print("Gate type:", gate_sprite.get_gate_type())
                 print("Current player form does not match gate type! Point deduction!")
                 # FIXME this is executed 60 times per second  -> change collision detection
                 # to x_pos and right edge of player only?
@@ -524,15 +527,13 @@ class SuperDippidBoy:
     #                                 Game end
     # --------------------------------------------------------------------------
 
-    # TODO reset all variables for the next run !!!
     def return_to_menu(self):
         # stop music
-        # pygame.mixer.music.stop()
-        self.sound_handler.stop_sound("mysterious_harp.mp3")
+        self.sound_handler.stop_sound(BACKGROUND_MUSIC)
+        SharedObstacleState.reset_move_speed()  # reset obstacle movement speed
 
         # show current score and highscore and wait until user wants to go on
         self.show_endscreen()
-
         # enable main menu again
         self.main_menu.enable()
 

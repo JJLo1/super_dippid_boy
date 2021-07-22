@@ -14,6 +14,10 @@ class SharedObstacleState:
     def increase_move_speed(cls):
         cls.obstacle_move_speed += 0.5  # TODO probably too much, 0.2 instead?
 
+    @classmethod
+    def reset_move_speed(cls):
+        cls.obstacle_move_speed = 3.5
+
 
 class Gate(pygame.sprite.Sprite, SharedObstacleState):
     """

@@ -1,6 +1,7 @@
 import os
 import sys
 import pygame
+from game_settings import BACKGROUND_MUSIC
 
 
 class SoundHandler:
@@ -8,7 +9,7 @@ class SoundHandler:
     Resource handling class for the game music and all sounds. Loads all defined sound assets on initialization.
     """
 
-    sound_assets = ["mysterious_harp.mp3"]  # TODO mp3 does not work in virtualBox !!
+    sound_assets = [BACKGROUND_MUSIC]
     sound_dict = dict()
 
     def __init__(self, assets_folder="assets"):
