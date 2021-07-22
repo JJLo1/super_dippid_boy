@@ -78,15 +78,16 @@ class ImageHandler:
                 print('Cannot load image:', fullname)
                 raise SystemExit(message)
 
+    # Returning images for the character depending on the current form
     @staticmethod
     def get_images_for_form(form):
         print(f"get images for form : {form}")
         if form == "rectangle":
-            print("in rectangle")
             directory = "assets/Rectangle"
-        else:
-            print("in triangle")
+        if form == "triangle":
             directory = "assets/Triangle"
+        else:
+            directory = "assets/Circle"
         image_list = []
         for filename in os.listdir(directory):
             image = pygame.image.load(os.path.join(directory, filename))
