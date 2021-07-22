@@ -65,10 +65,14 @@ class DollarOneRecognizer:
         if recognition_result is not None:
             best_template, score = recognition_result
             print(f"{best_template}   (Score / Probability: {score:.3f})")
-            return best_template, score
+            # only change the player form if the score is good enough, if not we keep the current form
+            if abs(score) < 4000:
+                return best_template
+            else:
+                print(f"Gesture prediction didn't work well (score: {score}). Form wasn't changed!")
         else:
             print("Couldn't predict a gesture!")
-            return None
+        return None
 
     def get_all_gestures(self):
         return self.existing_gestures

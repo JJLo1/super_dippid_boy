@@ -406,12 +406,9 @@ class SuperDippidBoy:
                 if event.button == 1:  # if the left mouse button was released
                     self.is_drawing = False
                     self.show_gesture = False
-                    predicted_gesture, score = self.gesture_recognizer.predict_gesture(self.gesture_points)
-                    # only change the form if the score is good enough, if not we keep the current form
-                    if abs(score) < 4000:
+                    predicted_gesture = self.gesture_recognizer.predict_gesture(self.gesture_points)
+                    if predicted_gesture is not None:
                         self.main_character.set_current_form(predicted_gesture)
-                    else:
-                        print(f"Gesture prediction didn't work well (score: {score}). Form wasn't changed!")
 
             elif event.type == MOUSEMOTION:
                 if self.is_drawing:
