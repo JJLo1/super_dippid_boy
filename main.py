@@ -557,7 +557,7 @@ class SuperDippidBoy:
 
     def return_to_menu(self):
         # stop music
-        self.sound_handler.stop_sound(BACKGROUND_MUSIC)
+        self.sound_handler.stop_sound()
         SharedObstacleState.reset_move_speed()  # reset obstacle movement speed
 
         # show current score and highscore and wait until user wants to go on

@@ -67,6 +67,9 @@ class SoundHandler:
 
         self.player.play()
 
+    def stop_sound(self):
+        self.player.stop()
+
     def set_background_music_playback_rate(self, rate):
         self.player.setPlaybackRate(rate)
 
