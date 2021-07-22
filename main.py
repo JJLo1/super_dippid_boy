@@ -508,18 +508,18 @@ class SuperDippidBoy:
             # self.is_running = False
 
         gate_sprite = pygame.sprite.spritecollideany(self.main_character, self.gate_collidables)
-        if gate_sprite:
+        if gate_sprite and not gate_sprite.has_already_collided():  # linter warnings are wrong here, just ignore them
+            gate_sprite.set_collided()  # mark this gate as collided
+
             curr_form = self.main_character.get_current_form()
-            gate_form = gate_sprite.get_gate_type()  # linter warning is wrong here, just ignore it
+            gate_form = gate_sprite.get_gate_type()
+            points = 60
             if curr_form == gate_form:
-                self.current_points += 1
+                self.current_points += points
             else:
-                print("Gate type:", gate_sprite.get_gate_type())
-                print("Current player form does not match gate type! Point deduction!")
-                # FIXME this is executed 60 times per second  -> change collision detection
-                # to x_pos and right edge of player only?
-                # TODO or only execute it once per second in the event loop above?
-                self.current_points = self.current_points - 1 if (self.current_points - 1) >= 0 else 0
+                # print("Gate type:", gate_sprite.get_gate_type())
+                # print("Current player form does not match gate type! Point deduction!")
+                self.current_points = self.current_points - points if (self.current_points - points) >= 0 else 0
 
     # --------------------------------------------------------------------------
     #                                 Game end

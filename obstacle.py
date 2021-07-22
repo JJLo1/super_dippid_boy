@@ -27,6 +27,8 @@ class Gate(pygame.sprite.Sprite, SharedObstacleState):
     def __init__(self, image_handler, x_pos, y_pos, width, height, gate_type: GateType):
         pygame.sprite.Sprite.__init__(self)
         self.gate_type = gate_type
+        # flag to check whether this gate has already collided with the player to prevent more than one collide hit
+        self.has_collided = False
 
         sprite_name = GateType.get_sprite_for_gate_type(gate_type)  # get the correct sprite for this gate type
         self.image = image_handler.get_image(sprite_name)
@@ -38,6 +40,12 @@ class Gate(pygame.sprite.Sprite, SharedObstacleState):
         self.rect.topleft = (x_pos, y_pos)
         self.rect.width = width
         self.rect.height = height
+
+    def set_collided(self):
+        self.has_collided = True
+
+    def has_already_collided(self):
+        return self.has_collided
 
     def get_gate_type(self):
         return self.gate_type
