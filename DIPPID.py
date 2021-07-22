@@ -1,5 +1,6 @@
 """
-This file was taken from https://github.com/PDA-UR/DIPPID-py.
+This file was taken from https://github.com/PDA-UR/DIPPID-py. Slightly adjusted by making the SensorUDP's connection
+thread a daemon thread so it will automatically stop when the main thread stops.
 """
 
 import sys

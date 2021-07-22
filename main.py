@@ -533,9 +533,9 @@ class SuperDippidBoy:
         # Check if any obstacles have collided with the player
         if pygame.sprite.spritecollideany(self.main_character, self.wall_collidables):
             # If so, then remove the player and stop the loop
-            # print("Player collided with wall! Game over!")
-            self.main_character.kill()
-            self.is_running = False
+            print("Player collided with wall! Game over!")
+            #self.main_character.kill()
+            #self.is_running = False
 
         gate_sprite = pygame.sprite.spritecollideany(self.main_character, self.gate_collidables)
         if gate_sprite and not gate_sprite.has_already_collided():  # linter warnings are wrong here, just ignore them
@@ -555,6 +555,8 @@ class SuperDippidBoy:
     #                                 Game end
     # --------------------------------------------------------------------------
 
+    # TODO a restart of the game in the menu leads to random obstacle creation where they can even get stuck in each
+    #  other!
     def return_to_menu(self):
         # stop music
         self.sound_handler.stop_sound()

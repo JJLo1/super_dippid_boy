@@ -5,8 +5,8 @@ class GateType(Enum):
     # these names must be the same as the ones used for the gestures in gestures.json
     TRIANGLE = "triangle"
     CIRCLE = "circle"
-    LINE = "line"
     RECTANGLE = "rectangle"
+    # LINE = "line"
 
     @classmethod
     def values(cls):
@@ -18,8 +18,8 @@ class GateType(Enum):
             return "gates/triangle.png"
         elif gate_type is GateType.CIRCLE.value:
             return "gates/circle.png"
-        elif gate_type is GateType.LINE.value:
-            return "gates/line.png"
+        # elif gate_type is GateType.LINE.value:
+        #    return "gates/line.png"
         elif gate_type is GateType.RECTANGLE.value:
             return "gates/rectangle.png"
         else:
