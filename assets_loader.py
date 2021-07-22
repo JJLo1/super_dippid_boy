@@ -56,11 +56,12 @@ class SoundHandler:
         self.playlist = QtMultimedia.QMediaPlaylist()
 
     def play_sound(self, file, play_infinite):
-        song_path = self.get_full_path_for_sound_file(file)
-        url = QUrl.fromLocalFile(song_path)
-        sound_content = QtMultimedia.QMediaContent(url)
-        self.playlist.addMedia(sound_content)
-        self.player.setPlaylist(self.playlist)
+        if self.playlist.isEmpty():
+            song_path = self.get_full_path_for_sound_file(file)
+            url = QUrl.fromLocalFile(song_path)
+            sound_content = QtMultimedia.QMediaContent(url)
+            self.playlist.addMedia(sound_content)
+            self.player.setPlaylist(self.playlist)
 
         if play_infinite is True:
             self.playlist.setPlaybackMode(QtMultimedia.QMediaPlaylist.PlaybackMode.Loop)
