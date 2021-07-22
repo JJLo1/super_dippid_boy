@@ -64,13 +64,11 @@ class SoundHandler:
             url = QUrl.fromLocalFile(song_path)
             sound_content = QtMultimedia.QMediaContent(url)
             self.playlist.addMedia(sound_content)
-            print(f"playlistplaybackmode: {self.playlist.playbackMode()}")
             # this didn't work,so we loop manually
             # if play_infinite is True:
             #   print("is true")
             #   self.playlist.setPlaybackMode(QtMultimedia.QMediaPlaylist.PlaybackMode.CurrentItemInLoop)
             self.player.setPlaylist(self.playlist)
-
 
         self._current_playback_rate = 1
         self.player.setPlaybackRate(self._current_playback_rate)
@@ -91,7 +89,6 @@ class SoundHandler:
             self.player.setPosition(0)
         self._current_playback_rate += rate
         self.player.setPlaybackRate(self._current_playback_rate)
-        print("increased it")
 
 
 class ImageHandler:
@@ -130,7 +127,6 @@ class ImageHandler:
     # Returning images for the character depending on the current form
     @staticmethod
     def get_images_for_form(form):
-        # print(f"get images for form : {form}")
         if form == "rectangle":
             directory = "assets/Rectangle"
         if form == "triangle":
