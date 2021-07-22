@@ -65,7 +65,7 @@ class DollarOneRecognizer:
         if recognition_result is not None:
             best_template, score = recognition_result
             print(f"{best_template}   (Score / Probability: {score:.3f})")
-            return best_template
+            return best_template, score
         else:
             print("Couldn't predict a gesture!")
             return None

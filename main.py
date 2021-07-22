@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import argparse
+import os
 import random
 import sys
 import numpy as np
@@ -41,7 +42,10 @@ class SuperDippidBoy:
     def __init__(self, debug_active: bool, dippid_port=5700):
         self.debug = debug_active
 
-        # init dippid  # TODO error handling
+        self.highscore_file_path = os.path.join("assets", "highscore.txt")
+        self.load_highscore()
+
+        # init dippid  # TODO error handling  -> show status in main menu and add button to reconnect if not connected
         self.dippid_sensor = SensorUDP(dippid_port)
 
         # init gesture recognizer
@@ -73,6 +77,19 @@ class SuperDippidBoy:
         # have changed for them to be visible to the user. With double buffered displays the display must be swapped
         # (or flipped) for the changes to become visible:
         pygame.display.flip()
+
+    def load_highscore(self):
+        if os.path.exists(self.highscore_file_path):
+            # read in current highscore
+            with open(self.highscore_file_path, "r") as highscore_file:
+                file_content = highscore_file.read()
+                print("Last high score: ", int(file_content))
+                self.highscore = int(file_content)
+        else:
+            # create new highscore file and init with 0
+            with open(self.highscore_file_path, "w") as highscore_file:
+                self.highscore = 0
+                highscore_file.write(str(self.highscore))
 
     # --------------------------------------------------------------------------
     #                               Menu code
@@ -108,8 +125,9 @@ class SuperDippidBoy:
                     if self.debug and event.button == 1 and self.in_add_gesture_submenu:
                         # Check if the mouse position is inside the draw area, otherwise ignore it. Without this check
                         # we couldn't click anywhere without resetting the gesture points as well!
-                        if (self.draw_area_rect.left <= pygame.mouse.get_pos()[0] <= self.draw_area_rect.right) and \
-                                (self.draw_area_rect.top <= pygame.mouse.get_pos()[1] <= self.draw_area_rect.bottom):
+                        mouse_pos = pygame.mouse.get_pos()
+                        if (self.draw_area_rect.left <= mouse_pos[0] <= self.draw_area_rect.right) and (
+                                self.draw_area_rect.top <= mouse_pos[1] <= self.draw_area_rect.bottom):
                             is_drawing = True
                             self.new_gesture = []  # reset the points
 
@@ -362,6 +380,7 @@ class SuperDippidBoy:
         for event in pygame.event.get():
             if event.type == QUIT:
                 self.is_running = False
+                self.end_game()
 
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
@@ -386,9 +405,12 @@ class SuperDippidBoy:
                 if event.button == 1:  # if the left mouse button was released
                     self.is_drawing = False
                     self.show_gesture = False
-                    predicted_gesture = self.gesture_recognizer.predict_gesture(self.gesture_points)
-                    # TODO nur wenn score groß genug ist, auch tatsächlich die Form ändern!
-                    self.main_character.set_current_form(predicted_gesture)
+                    predicted_gesture, score = self.gesture_recognizer.predict_gesture(self.gesture_points)
+                    # only change the form if the score is good enough, if not we keep the current form
+                    if abs(score) < 3000:  # TODO check in literature for a good threshold
+                        self.main_character.set_current_form(predicted_gesture)
+                    else:
+                        print(f"Gesture prediction didn't work well (score: {score}). Form wasn't changed!")
 
             elif event.type == MOUSEMOTION:
                 if self.is_drawing:
@@ -482,11 +504,8 @@ class SuperDippidBoy:
         if pygame.sprite.spritecollideany(self.main_character, self.wall_collidables):
             # If so, then remove the player and stop the loop
             print("Player collided with wall! Game over!")
-            # self.main_character.kill()
-            # self.is_running = False
-            # TODO show 'You Died' - Message :)
-
-        # if pygame.sprite.spritecollideany(main_character, self.gate_collidables, check_gate_collision):
+            self.main_character.kill()
+            self.is_running = False
 
         gate_sprite = pygame.sprite.spritecollideany(self.main_character, self.gate_collidables)
         if gate_sprite:
@@ -504,20 +523,69 @@ class SuperDippidBoy:
     #                                 Game end
     # --------------------------------------------------------------------------
 
+    # TODO reset all variables for the next run !!!
     def return_to_menu(self):
         # stop music
         # pygame.mixer.music.stop()
         self.sound_handler.stop_sound("mysterious_harp.mp3")
 
+        # show current score and highscore and wait until user wants to go on
+        self.show_endscreen()
+
         # enable main menu again
         self.main_menu.enable()
+
+    def show_endscreen(self):
+        # self.draw_background()
+        endscreen_font = pygame.font.Font(None, 50)
+        current_score_text = endscreen_font.render(f"Score: {self.current_points}", True, (255, 255, 255))
+        high_score_text = endscreen_font.render(f"Current high score: {self.highscore}", True, (255, 255, 255))
+        self.screen.blit(current_score_text, (SCREEN_WIDTH / 2 - current_score_text.get_width() / 2, 150))
+        self.screen.blit(high_score_text, (SCREEN_WIDTH / 2 - high_score_text.get_width() / 2, 240))
+
+        # update high score if current points are higher than the current high score
+        if self.current_points > self.highscore:
+            new_high_score_text = endscreen_font.render("You have set a new record! Congratulations!", True,
+                                                        (71, 193, 46))
+            self.screen.blit(new_high_score_text, (SCREEN_WIDTH / 2 - new_high_score_text.get_width() / 2, 350))
+            self.highscore = self.current_points  # overwrite local variable for next play through
+            # update the highscore file
+            # opening the file in "write" mode deletes the old content automatically
+            with open(self.highscore_file_path, "w") as highscore_file:
+                highscore_file.write(str(self.highscore))
+
+        # draw a continue button (rect + text)
+        button_font = pygame.font.Font(None, 30)
+        continue_text = button_font.render("Continue", True, (0, 0, 0))
+        text_area = continue_text.get_rect()
+        text_area.center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 150)
+        continue_button = pygame.draw.rect(self.screen, (255, 255, 255),
+                                           (text_area.left - 10, text_area.top - 10, text_area.width + 20,
+                                            text_area.height + 20), border_radius=2)
+        self.screen.blit(continue_text, text_area)
+
+        endscreen_active = True
+        while endscreen_active:
+            pygame.time.delay(100)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    endscreen_active = False
+                    self.end_game()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    # check if user clicked on the continue button
+                    if event.button == 1 and (continue_button.left <= mouse_pos[0] <= continue_button.right) and (
+                            continue_button.top <= mouse_pos[1] <= continue_button.bottom):
+                        endscreen_active = False
+
+            pygame.display.flip()
 
     def end_game(self):
         pygame.mixer.quit()
         # TODO check that dippid_sensor was successfully connected! -> some error handling for dippid
         self.dippid_sensor.disconnect()  # stop dippid sensor
         pygame.quit()  # quit pygame
-        # sys.exit(0)
+        sys.exit(0)  # necessary if we quit in a nested while loop (i.e. during the game or the end screen)
 
 
 def main():
