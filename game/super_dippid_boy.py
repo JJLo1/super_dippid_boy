@@ -329,6 +329,11 @@ class SuperDippidBoy:
         self.wall_collidables = pygame.sprite.Group()  # for collision detection
         self.gate_collidables = pygame.sprite.Group()
 
+        # for subsequent game starts the lists need be emptied, since they don't get overwritten
+        self.obstacles.empty()
+        self.wall_collidables.empty()
+        self.gate_collidables.empty()
+
         self.font = pygame.font.Font(None, 25)
         self.current_points = 0
 
