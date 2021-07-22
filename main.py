@@ -297,6 +297,7 @@ class SuperDippidBoy:
             self.new_gesture_success_label.hide()
             self.new_gesture_error_label.show()
 
+    # TODO move the actual game to a separate class? -> would probably be cleaner
     # --------------------------------------------------------------------------
     #                              Actual game code
     # --------------------------------------------------------------------------
@@ -419,7 +420,7 @@ class SuperDippidBoy:
             elif event.type == self.INCREASE_SPEED_EVENT:
                 # increase the movement speed of the obstacles
                 SharedObstacleState.increase_move_speed()
-                # and decrease the spawn time of the next obstacles  # TODO maybe this is too hard?
+                # and decrease the spawn time of the next obstacles
                 self.interval_time -= 30
                 pygame.time.set_timer(self.SPAWN_OBSTACLE_EVENT, self.interval_time)
 
@@ -433,7 +434,6 @@ class SuperDippidBoy:
             elif event.type == self.UPDATE_SCORE_EVENT:
                 self.current_points += 5
 
-    # TODO steuerung über menü dropdown
     def check_player_movement(self):
         if "gravity" in self.dippid_sensor.get_capabilities():
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')[self.dippid_axis])
@@ -504,8 +504,8 @@ class SuperDippidBoy:
         if pygame.sprite.spritecollideany(self.main_character, self.wall_collidables):
             # If so, then remove the player and stop the loop
             print("Player collided with wall! Game over!")
-            self.main_character.kill()
-            self.is_running = False
+            # self.main_character.kill()
+            # self.is_running = False
 
         gate_sprite = pygame.sprite.spritecollideany(self.main_character, self.gate_collidables)
         if gate_sprite:
@@ -516,8 +516,9 @@ class SuperDippidBoy:
             else:
                 print("Gate type:", gate_sprite.get_gate_type())  # linter warning is wrong here, just ignore it
                 print("Current player form does not match gate type! Point deduction!")
-                self.current_points -= 20  # FIXME this is executed 60 times per second  -> change collision detection
+                # FIXME this is executed 60 times per second  -> change collision detection
                 # to x_pos and right edge of player only?
+                self.current_points = self.current_points - 20 if (self.current_points - 20) >= 0 else 0
 
     # --------------------------------------------------------------------------
     #                                 Game end
