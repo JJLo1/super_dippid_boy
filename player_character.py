@@ -1,4 +1,3 @@
-import sys
 import pygame
 from assets_loader import ImageHandler
 from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT
@@ -63,11 +62,11 @@ class PlayerCharacter(pygame.sprite.Sprite):
         self.rect.clamp_ip((0, 50, SCREEN_WIDTH, SCREEN_HEIGHT - 100))  # TODO magic numbers
 
     def get_current_form(self):
-        print(f"Returning current player form: {self.__current_form}")
+        # print(f"Returning current player form: {self.__current_form}")
         return self.__current_form
 
     def set_current_form(self, form):
-        sys.stderr.write(f"new player form: {form}")
+        # sys.stderr.write(f"new player form: {form}")
         self.__current_form = form
 
     def _set_movement(self, new_movement):
