@@ -277,8 +277,9 @@ class SuperDippidBoy:
 
     def check_dippid_connection(self):
         # this works only once! After one successful connect we cannot determine if the connection was lost again!
-        capabilities_ready = all(self.dippid_sensor.has_capability(capability)
-                                 for capability in ["gravity", "accelerometer"])
+        print(self.dippid_sensor.get_capabilities())
+        capabilities_ready = any(self.dippid_sensor.has_capability(capability)
+                                 for capability in ["gravity", "accelerometer", "rotation"])
         self.has_connection = True if capabilities_ready else False
         self.show_dippid_connection_status()
 
@@ -460,9 +461,16 @@ class SuperDippidBoy:
             # dippid device is smartphone
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')[self.dippid_axis])
         # FIXME: convert angle values to the same range as gravity! (angles are between -180 and 180 -> /18 ?)
-        elif "angle" in self.dippid_sensor.get_capabilities():
+        elif "rotation" in self.dippid_sensor.get_capabilities():
             # dippid device is m5stack
-            self.main_character.change_movement(angle=self.dippid_sensor.get_value('angle')[self.dippid_axis])
+            if self.dippid_axis is 'x':
+                rotation_type = 'pitch'
+            elif self.dippid_axis is 'y':
+                rotation_type = 'roll'
+            else:
+                rotation_type = 'yaw'
+            rotation_angle = self.dippid_sensor.get_value('rotation')[rotation_type] / M5_STACK_ROTATION_DIVIDER
+            self.main_character.change_movement(rotation_angle)
 
         if self.debug:
             # in debug mode the user can also use 'w' and 's' to control the vertical movement of the player character
