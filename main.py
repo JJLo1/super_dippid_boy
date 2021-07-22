@@ -8,7 +8,7 @@ import sys
 import numpy as np
 from DIPPID import SensorUDP
 from assets_loader import SoundHandler, ImageHandler
-from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BACKGROUND_MUSIC
+from game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BACKGROUND_MUSIC, BACKGROUND_MOVEMENT_SPEED
 from game_utils import draw_gesture
 from gate_type import GateType
 from obstacle import Obstacle, SharedObstacleState
@@ -316,7 +316,7 @@ class SuperDippidBoy:
         self.font = pygame.font.Font(None, 25)
         self.current_points = 0
 
-        self.background_movement_speed = 1.5
+        self.background_movement_speed = BACKGROUND_MOVEMENT_SPEED
         # Clock object used to help control the game's framerate. Used in the main loop to make sure the game doesn't
         # run too fast
         self.clock = pygame.time.Clock()
@@ -408,7 +408,7 @@ class SuperDippidBoy:
                     self.show_gesture = False
                     predicted_gesture, score = self.gesture_recognizer.predict_gesture(self.gesture_points)
                     # only change the form if the score is good enough, if not we keep the current form
-                    if abs(score) < 3000:  # TODO check in literature for a good threshold
+                    if abs(score) < 4000:
                         self.main_character.set_current_form(predicted_gesture)
                     else:
                         print(f"Gesture prediction didn't work well (score: {score}). Form wasn't changed!")
@@ -515,13 +515,14 @@ class SuperDippidBoy:
             curr_form = self.main_character.get_current_form()
             gate_form = gate_sprite.get_gate_type()  # linter warning is wrong here, just ignore it
             if curr_form == gate_form:
-                self.current_points += 20
+                self.current_points += 1
             else:
                 print("Gate type:", gate_sprite.get_gate_type())
                 print("Current player form does not match gate type! Point deduction!")
                 # FIXME this is executed 60 times per second  -> change collision detection
                 # to x_pos and right edge of player only?
-                self.current_points = self.current_points - 20 if (self.current_points - 20) >= 0 else 0
+                # TODO or only execute it once per second in the event loop above?
+                self.current_points = self.current_points - 1 if (self.current_points - 1) >= 0 else 0
 
     # --------------------------------------------------------------------------
     #                                 Game end

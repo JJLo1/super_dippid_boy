@@ -58,7 +58,7 @@ class DollarOneRecognizer:
     def predict_gesture(self, input_points):
         if len(input_points) < 2:
             sys.stderr.write("You have to draw more to predict a gesture!")
-            return
+            return None
 
         normalized_points = self._normalize(input_points)
         recognition_result = self._recognize(normalized_points)
@@ -180,5 +180,6 @@ class DollarOneRecognizer:
 
         if T_new is None:
             return
-        score = 1 - b / 0.5 * np.sqrt(self.SQUARE_SIZE**2 + self.SQUARE_SIZE**2)
+        score = 1 - (b / 0.5 * np.sqrt(self.SQUARE_SIZE**2 + self.SQUARE_SIZE**2))
+        print("normalized score: ", score)
         return T_new, score
