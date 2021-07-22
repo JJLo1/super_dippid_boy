@@ -12,7 +12,7 @@ class SharedObstacleState:
 
     @classmethod
     def increase_move_speed(cls):
-        cls.obstacle_move_speed += 0.5  # TODO probably too much, 0.2 instead?
+        cls.obstacle_move_speed += 0.15  # TODO probably too much, 0.2 instead?
 
     @classmethod
     def reset_move_speed(cls):

@@ -2,7 +2,7 @@ import os
 from PyQt5 import QtMultimedia
 from PyQt5.QtCore import QUrl
 import pygame
-from game.game_settings import BACKGROUND_MUSIC, BACKGROUND_IMAGE
+from game.game_settings import BACKGROUND_MUSIC, BACKGROUND_MUSIC_LENGTH_IN_MS, BACKGROUND_IMAGE
 
 
 class SoundHandler:
@@ -16,6 +16,8 @@ class SoundHandler:
     def __init__(self, assets_folder="assets"):
         self._assets_folder = assets_folder
         self._init_player()
+        self._current_playback_rate = 1
+        self._game_speed_increase_count = 0
     '''
     def _load_sounds(self):
         if not pygame.mixer or not pygame.mixer.get_init():
@@ -62,18 +64,34 @@ class SoundHandler:
             url = QUrl.fromLocalFile(song_path)
             sound_content = QtMultimedia.QMediaContent(url)
             self.playlist.addMedia(sound_content)
+            print(f"playlistplaybackmode: {self.playlist.playbackMode()}")
+            # this didn't work,so we loop manually
+            # if play_infinite is True:
+            #   print("is true")
+            #   self.playlist.setPlaybackMode(QtMultimedia.QMediaPlaylist.PlaybackMode.CurrentItemInLoop)
             self.player.setPlaylist(self.playlist)
 
-        if play_infinite is True:
-            self.playlist.setPlaybackMode(QtMultimedia.QMediaPlaylist.PlaybackMode.Loop)
 
+        self._current_playback_rate = 1
+        self.player.setPlaybackRate(self._current_playback_rate)
         self.player.play()
+        self.player.setPosition(0)
 
     def stop_sound(self):
         self.player.stop()
 
-    def set_background_music_playback_rate(self, rate):
-        self.player.setPlaybackRate(rate)
+    def game_speed_increase(self):
+        self._game_speed_increase_count += 1
+        if self._game_speed_increase_count % 5 == 0:
+            self.increase_background_music_playback_rate(0.2)
+
+    def increase_background_music_playback_rate(self, rate):
+        # Need to check if the song is over to loop it, since the loop function of the player didn't work
+        if self.player.position() >= BACKGROUND_MUSIC_LENGTH_IN_MS:
+            self.player.setPosition(0)
+        self._current_playback_rate += rate
+        self.player.setPlaybackRate(self._current_playback_rate)
+        print("increased it")
 
 
 class ImageHandler:

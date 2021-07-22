@@ -4,7 +4,7 @@ import numpy as np
 from DIPPID import SensorUDP
 from game.assets_loader import SoundHandler, ImageHandler
 from game.game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BACKGROUND_MUSIC, \
-    BACKGROUND_MOVEMENT_SPEED, BORDER_HEIGHT
+    BACKGROUND_MOVEMENT_SPEED, BORDER_HEIGHT, M5_STACK_ROTATION_DIVIDER
 from game.game_utils import draw_gesture
 from game.gate_type import GateType
 from game.obstacle import Obstacle, SharedObstacleState
@@ -354,7 +354,7 @@ class SuperDippidBoy:
 
         # create event to increase the game speed over time
         self.INCREASE_SPEED_EVENT = pygame.USEREVENT + 2
-        pygame.time.set_timer(self.INCREASE_SPEED_EVENT, 10000)  # increase speed every 10 seconds
+        pygame.time.set_timer(self.INCREASE_SPEED_EVENT, 5000)  # increase speed every 10 seconds
 
         self.UPDATE_SCORE_EVENT = pygame.USEREVENT + 3
         pygame.time.set_timer(self.UPDATE_SCORE_EVENT, 1000)  # update score each second
@@ -441,6 +441,9 @@ class SuperDippidBoy:
                 # and decrease the spawn time of the next obstacles
                 self.interval_time -= 30
                 pygame.time.set_timer(self.SPAWN_OBSTACLE_EVENT, self.interval_time)
+                # tell music player that game speed was increased
+                self.sound_handler.game_speed_increase()
+
 
             elif event.type == self.SPAWN_OBSTACLE_EVENT:
                 # create a new obstacle to the right of the current screen whenever our custom event is sent
@@ -572,7 +575,7 @@ class SuperDippidBoy:
         button_font = pygame.font.Font(None, 30)
         continue_text = button_font.render("Continue", True, (0, 0, 0))
         text_area = continue_text.get_rect()
-        text_area.center = (SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 150)
+        text_area.center = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 150)
         continue_button = pygame.draw.rect(self.screen, (255, 255, 255),
                                            (text_area.left - 10, text_area.top - 10, text_area.width + 20,
                                             text_area.height + 20), border_radius=2)
