@@ -17,7 +17,7 @@ class GateType(Enum):
         if gate_type is GateType.TRIANGLE.value:
             return "gates/triangle.png"
         elif gate_type is GateType.CIRCLE.value:
-            return "gates/triangle.png"  # TODO replace with circle
+            return "gates/circle.png"
         elif gate_type is GateType.LINE.value:
             return "gates/line.png"
         elif gate_type is GateType.RECTANGLE.value:
