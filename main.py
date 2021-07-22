@@ -224,10 +224,10 @@ class SuperDippidBoy:
         self.sources_submenu.add.label("Used Assets:", font_size=30, border_width=0)
         self.sources_submenu.add.label("\n- Forest Background Image by edermunizz ("
                                        "https://edermunizz.itch.io/free-pixel-art-forest)"
-                                       "\n- Mysterious Harp Loop Music by \"VWolfdog\" ("
-                                       "https://opengameart.org/content/soft-mysterious-harp-loop)"
                                        "\n- Wooden Material by \"yamachem\" ("
-                                       "https://openclipart.org/detail/226666/flooring-material-02)",
+                                       "https://openclipart.org/detail/226666/flooring-material-02)"
+                                       "\n- Rainy Village Music by \"TAD\" ("
+                                       "https://opengameart.org/content/rainy-village)",
                                        font_size=20, border_width=0)
         # self.sources_submenu.add.button('Return to main menu', pygame_menu.events.BACK)
 

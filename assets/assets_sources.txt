@@ -1,6 +1,5 @@
 - Forest Background Image by edermunizz (https://edermunizz.itch.io/free-pixel-art-forest); slightly adjusted & cropped
-- Slime Character Sprite by rvros (https://rvros.itch.io/pixel-art-animated-slime)
-- Mysterious Harp Loop Music by "VWolfdog" (https://opengameart.org/content/soft-mysterious-harp-loop)
+- Mysterious Harp Loop Music by "VWolfdog" (https://opengameart.org/content/soft-mysterious-harp-loop) (not used)
 - Wooden Material by "yamachem" (https://openclipart.org/detail/226666/flooring-material-02)
 - Portal by "Andy" (https://openclipart.org/detail/16148/whirlpool); background made transparent
-- Rainy Village by "TAD" (https://opengameart.org/content/rainy-village)
+- Rainy Village Music by "TAD" (https://opengameart.org/content/rainy-village); converted to .wav - format

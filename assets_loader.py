@@ -33,6 +33,9 @@ class SoundHandler:
         sound = self.sound_dict.get(sound_name)
         if not sound:
             raise SystemExit(f"Error while trying to load asset! Sound '{sound_name}' not found!")
+        # turn music a little bit down
+        new_volume = sound.get_volume() / 2
+        sound.set_volume(new_volume)
         sound.play(-1) if play_infinite else sound.play()
 
     def stop_sound(self, sound_name: str):
@@ -48,8 +51,7 @@ class ImageHandler:
     Resource handling class for all the images used in the game. Loads all defined image assets on initialization.
     """
 
-    image_assets = ["slime.png", "slime-move.png", "wooden_material.png", "portal.png", "gates/line.png",
-                    "gates/triangle.png", "gates/rectangle.png"]
+    image_assets = ["wooden_material.png", "portal.png", "gates/line.png", "gates/triangle.png", "gates/rectangle.png"]
     image_dict = dict()
     assets_folder = "assets"
 
