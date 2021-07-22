@@ -77,7 +77,14 @@ class ImageHandler:
                 raise SystemExit(message)
 
     @staticmethod
-    def get_images_from_directory(directory):
+    def get_images_for_form(form):
+        print(f"get images for form : {form}")
+        if form == "rectangle":
+            print("in rectangle")
+            directory = "assets/Rectangle"
+        else:
+            print("in triangle")
+            directory = "assets/Triangle"
         image_list = []
         for filename in os.listdir(directory):
             image = pygame.image.load(os.path.join(directory, filename))

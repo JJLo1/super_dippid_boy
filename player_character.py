@@ -1,6 +1,6 @@
 import pygame
 from assets_loader import ImageHandler
-from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT
+from game_settings import SCREEN_WIDTH, SCREEN_HEIGHT, BORDER_HEIGHT
 from gate_type import GateType
 
 
@@ -9,13 +9,14 @@ class PlayerCharacter(pygame.sprite.Sprite):
     The main character of the game.
     """
 
-    def __init__(self, image_handler, sound_handler, graphics_folder):
+    def __init__(self, image_handler, sound_handler):
         pygame.sprite.Sprite.__init__(self)  # call Sprite initializer
 
         self.sound_handler = sound_handler
         self.image_handler = image_handler
+
         # load all sprites for the character
-        self.character_images = ImageHandler.get_images_from_directory(graphics_folder)
+        self.character_images = ImageHandler.get_images_for_form("triangle")
         self.original_image = self.character_images[0]
         self.rect = self.original_image.get_rect()
         self.image = self.original_image
@@ -51,7 +52,7 @@ class PlayerCharacter(pygame.sprite.Sprite):
         self.image = self.character_images[self.current_image_index]
 
     def _update_rotation(self):
-        self.rot = (self.rect.bottom / self.area.bottom) * 180 + 180  # bei 0 = 1 bei self.area.bottom = -1 self.bottom/2 0
+        self.rot = (self.rect.centery / (self.area.bottom-BORDER_HEIGHT*2))*180+180
         new_image = pygame.transform.rotate(self.image, self.rot)
         new_rect = new_image.get_rect(center=self.image.get_rect(center=self.rect.center).center)
         self.image, self.rect = (new_image, new_rect)
@@ -66,8 +67,12 @@ class PlayerCharacter(pygame.sprite.Sprite):
         return self.__current_form
 
     def set_current_form(self, form):
-        # sys.stderr.write(f"new player form: {form}")
-        self.__current_form = form
+        if form is not self.__current_form:
+            self.__current_form = form
+            self.character_images = ImageHandler.get_images_for_form(form)
+            self.original_image = self.character_images[0]
+            self.image = self.original_image
+            self.current_image_index = 0
 
     def _set_movement(self, new_movement):
         self.movement_x, self.movement_y = new_movement
