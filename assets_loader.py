@@ -1,5 +1,6 @@
 import os
-import sys
+from PyQt5 import QtMultimedia
+from PyQt5.QtCore import QUrl
 import pygame
 from game_settings import BACKGROUND_MUSIC, BACKGROUND_IMAGE
 
@@ -14,8 +15,8 @@ class SoundHandler:
 
     def __init__(self, assets_folder="assets"):
         self._assets_folder = assets_folder
-        self._load_sounds()
-
+        self._init_player()
+    '''
     def _load_sounds(self):
         if not pygame.mixer or not pygame.mixer.get_init():
             raise SystemExit("Failed to load the pygame sound modules!")
@@ -44,6 +45,30 @@ class SoundHandler:
             sys.stderr.write(f"Error while trying to stop sound '{sound_name}'!")
             return
         sound.fadeout(3)
+    '''
+    def get_full_path_for_sound_file(self, filename):
+        rel_path = os.path.join("assets", filename)
+        abs_path = os.path.abspath(rel_path)
+        return abs_path
+
+    def _init_player(self):
+        self.player = QtMultimedia.QMediaPlayer()
+        self.playlist = QtMultimedia.QMediaPlaylist()
+
+    def play_sound(self, file, play_infinite):
+        song_path = self.get_full_path_for_sound_file(file)
+        url = QUrl.fromLocalFile(song_path)
+        sound_content = QtMultimedia.QMediaContent(url)
+        self.playlist.addMedia(sound_content)
+        self.player.setPlaylist(self.playlist)
+
+        if play_infinite is True:
+            self.playlist.setPlaybackMode(QtMultimedia.QMediaPlaylist.PlaybackMode.Loop)
+
+        self.player.play()
+
+    def set_background_music_playback_rate(self, rate):
+        self.player.setPlaybackRate(rate)
 
 
 class ImageHandler:
