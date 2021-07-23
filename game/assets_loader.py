@@ -128,7 +128,7 @@ class ImageHandler:
     def get_images_for_form(form):
         if form == "rectangle":
             directory = "assets/Rectangle"
-        if form == "triangle":
+        elif form == "triangle":
             directory = "assets/Triangle"
         else:
             directory = "assets/Circle"
