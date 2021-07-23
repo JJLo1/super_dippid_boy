@@ -3,7 +3,7 @@
 Small gesture controlled 2D side-scroller that was developed as the final project of the 'Interaction Techniques and 
 Technologies' (ITT) course in the summer semester 2021 at the University of Regensburg. Uses a Dippid Device (either a M5Stack or a smartphone with the Dippid-Android-App) to move the player character as well as the $P recognizer to detect gestures drawn with the mouse.
 
-TODO: screenshot
+![Game-Screenshot](./assets/Super_Dippid_Boy_Screenshot.png)
 
 
 ## How to install
