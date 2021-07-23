@@ -351,14 +351,14 @@ class SuperDippidBoy:
         # see https://stackoverflow.com/questions/18948981/do-something-every-x-milliseconds-in-pygame
         self.interval_time = 3000  # random.randrange(2500, 4500)  # every 2.5 until 4.5 seconds
         self.SPAWN_OBSTACLE_EVENT = pygame.USEREVENT + 1
-        pygame.time.set_timer(self.SPAWN_OBSTACLE_EVENT, self.interval_time)
+        pygame.time.set_timer(self.SPAWN_OBSTACLE_EVENT, self.interval_time, True)
 
         # create event to increase the game speed over time
         self.INCREASE_SPEED_EVENT = pygame.USEREVENT + 2
-        pygame.time.set_timer(self.INCREASE_SPEED_EVENT, 5000)  # increase speed every 10 seconds
+        pygame.time.set_timer(self.INCREASE_SPEED_EVENT, 5000, True)
 
         self.UPDATE_SCORE_EVENT = pygame.USEREVENT + 3
-        pygame.time.set_timer(self.UPDATE_SCORE_EVENT, 1000)  # update score each second
+        pygame.time.set_timer(self.UPDATE_SCORE_EVENT, 1000, True)  # update score each second
 
     def run_game_loop(self):
         """
@@ -441,9 +441,11 @@ class SuperDippidBoy:
                 SharedObstacleState.increase_move_speed()
                 # and decrease the spawn time of the next obstacles
                 self.interval_time -= 30
-                pygame.time.set_timer(self.SPAWN_OBSTACLE_EVENT, self.interval_time)
                 # tell music player that game speed was increased
                 self.sound_handler.game_speed_increase()
+
+                pygame.time.set_timer(self.INCREASE_SPEED_EVENT, 5000, True)
+
 
 
             elif event.type == self.SPAWN_OBSTACLE_EVENT:
@@ -452,9 +454,12 @@ class SuperDippidBoy:
                 self.obstacles.add(new_obstacle)
                 self.wall_collidables.add(*new_obstacle.walls)
                 self.gate_collidables.add(*new_obstacle.gates)
+                pygame.time.set_timer(self.SPAWN_OBSTACLE_EVENT, self.interval_time, True)
+
 
             elif event.type == self.UPDATE_SCORE_EVENT:
                 self.current_points += 5
+                pygame.time.set_timer(self.UPDATE_SCORE_EVENT, 1000, True)  # update score each second
 
     def check_player_movement(self):
         if "gravity" in self.dippid_sensor.get_capabilities():
