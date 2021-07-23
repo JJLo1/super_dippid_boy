@@ -113,8 +113,11 @@ class Obstacle(pygame.sprite.Sprite, SharedObstacleState):
     def _create_obstacle(self):
         obstacle_part_count = int(self.obstacle_area_height / settings.OBSTACLE_PART_HEIGHT)
         number_of_gates = random.randint(0, settings.MAX_HOLES_IN_OBSTACLE)
-        min_number_of_passages = 0 if number_of_gates > 0 else 1
-        number_of_passages = random.randint(min_number_of_passages, settings.MAX_HOLES_IN_OBSTACLE-number_of_gates)
+        if number_of_gates == 0:
+            min_number_of_passages = 1
+            number_of_passages = random.randint(min_number_of_passages, settings.MAX_HOLES_IN_OBSTACLE-number_of_gates)
+        else:
+            number_of_passages = 0
         number_of_walls = obstacle_part_count - number_of_gates - number_of_passages
         part_list = []
         for gate in range(number_of_gates):
