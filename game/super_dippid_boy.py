@@ -463,9 +463,9 @@ class SuperDippidBoy:
         # FIXME: convert angle values to the same range as gravity! (angles are between -180 and 180 -> /18 ?)
         elif "rotation" in self.dippid_sensor.get_capabilities():
             # dippid device is m5stack
-            if self.dippid_axis is 'x':
+            if self.dippid_axis == 'x':
                 rotation_type = 'pitch'
-            elif self.dippid_axis is 'y':
+            elif self.dippid_axis == 'y':
                 rotation_type = 'roll'
             else:
                 rotation_type = 'yaw'

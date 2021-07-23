@@ -48,7 +48,6 @@ class SoundHandler:
             return
         sound.fadeout(3)
     '''
-
     def get_full_path_for_sound_file(self, filename):
         rel_path = os.path.join("assets", filename)
         abs_path = os.path.abspath(rel_path)
