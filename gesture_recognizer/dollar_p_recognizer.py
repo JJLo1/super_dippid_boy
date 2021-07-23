@@ -64,7 +64,7 @@ class DollarPRecognizer:
             print(f"A gesture with the name '{gesture_name}' does already exist!")
             answer = input("Do you want to overwrite it? [y/n]\n")
             if str.lower(answer) == "y" or "yes":
-                self.existing_gestures[gesture_name] = {"original": gesture_points}
+                self.existing_gestures[gesture_name] = {"original": gesture_points}  # , "norm": normalized_gesture}
             else:
                 print("\nSaving gesture cancelled.")
                 return

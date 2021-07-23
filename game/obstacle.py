@@ -12,7 +12,7 @@ class SharedObstacleState:
 
     @classmethod
     def increase_move_speed(cls):
-        cls.obstacle_move_speed += 0.15  # TODO probably too much, 0.2 instead?
+        cls.obstacle_move_speed += 0.15
 
     @classmethod
     def reset_move_speed(cls):
@@ -135,7 +135,8 @@ class Obstacle(pygame.sprite.Sprite, SharedObstacleState):
         for element in part_order:
             if element == "w":
                 # we create a new wall and add its height to the current y-pos so the next part will start below it
-                new_wall = Wall(self.image_handler, self.x_pos, self.last_y, self.obstacle_width, settings.OBSTACLE_PART_HEIGHT)
+                new_wall = Wall(self.image_handler, self.x_pos, self.last_y, self.obstacle_width,
+                                settings.OBSTACLE_PART_HEIGHT)
                 self.walls.add(new_wall)
                 self.last_y = self.last_y + settings.OBSTACLE_PART_HEIGHT
             elif element == "g":
@@ -144,8 +145,8 @@ class Obstacle(pygame.sprite.Sprite, SharedObstacleState):
                 self.last_y += self.gate_offset / 2
 
                 gate_type = random.choice(GateType.values())  # get a random gate type
-                new_gate = Gate(self.image_handler, self.x_pos, self.last_y, self.obstacle_width, settings.OBSTACLE_PART_HEIGHT,
-                                gate_type=gate_type)
+                new_gate = Gate(self.image_handler, self.x_pos, self.last_y, self.obstacle_width,
+                                settings.OBSTACLE_PART_HEIGHT, gate_type=gate_type)
                 self.gates.add(new_gate)
                 self.last_y = self.last_y + settings.OBSTACLE_PART_HEIGHT
             elif element == "p":
@@ -170,7 +171,6 @@ class Obstacle(pygame.sprite.Sprite, SharedObstacleState):
     def delete_obstacle_parts(self):
         for sprite_group in [self.walls, self.gates]:
             sprite_group.empty()
-
 
     def update(self):
         # update the obstacle parts first

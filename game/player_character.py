@@ -40,7 +40,7 @@ class PlayerCharacter(pygame.sprite.Sprite):
         # perform per-frame changes on the game object
         self._animate_character()
         self._move()
-       # self._update_rotation()
+        # self._update_rotation()
 
     def _animate_character(self):
         self.current_frag = self.current_frag + 1

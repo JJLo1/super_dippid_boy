@@ -1,3 +1,5 @@
+# not used at the moment
+
 """
 The functions below have been implemented based on the pseudocode in the original paper on the 1$ recognizer:
 Wobbrock, J. O., Wilson, A. D., & Li, Y. (2007, October). Gestures without libraries, toolkits or training:

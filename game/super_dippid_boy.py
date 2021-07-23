@@ -8,7 +8,8 @@ from game.game_settings import GAME_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, FPS, BAC
 from game.game_utils import draw_gesture
 from game.gate_type import GateType
 from game.obstacle import Obstacle, SharedObstacleState
-from gesture_recognizer.dollar_one_recognizer import DollarOneRecognizer
+# from gesture_recognizer.dollar_one_recognizer import DollarOneRecognizer
+from gesture_recognizer.dollar_p_recognizer import DollarPRecognizer
 from game.player_character import PlayerCharacter
 import pygame
 import pygame_menu
@@ -37,7 +38,7 @@ class SuperDippidBoy:
         self.dippid_sensor = SensorUDP(dippid_port)
 
         # init gesture recognizer
-        self.gesture_recognizer = DollarOneRecognizer()
+        self.gesture_recognizer = DollarPRecognizer()
         # setup the pygame window
         self.setup_game_window()
         # and resource handlers
@@ -338,6 +339,8 @@ class SuperDippidBoy:
         self.font = pygame.font.Font(None, 25)
         self.current_points = 0
 
+        self.current_stroke_index = 0
+
         self.background_movement_speed = BACKGROUND_MOVEMENT_SPEED
         # Clock object used to help control the game's framerate. Used in the main loop to make sure the game doesn't
         # run too fast
@@ -355,7 +358,7 @@ class SuperDippidBoy:
 
         # create event to increase the game speed over time
         self.INCREASE_SPEED_EVENT = pygame.USEREVENT + 2
-        pygame.time.set_timer(self.INCREASE_SPEED_EVENT, 5000, True)
+        pygame.time.set_timer(self.INCREASE_SPEED_EVENT, 5000, True)  # True so it will fire only once
 
         self.UPDATE_SCORE_EVENT = pygame.USEREVENT + 3
         pygame.time.set_timer(self.UPDATE_SCORE_EVENT, 1000, True)  # update score each second
@@ -386,7 +389,8 @@ class SuperDippidBoy:
 
             # TODO show gesture on separate thread so main loop time isn't blocked by this?
             if self.show_gesture and len(self.gesture_points) > 2:  # we need at least two points to draw a line
-                draw_gesture(self.screen, self.gesture_points)
+                points = [(p[0], p[1])for p in self.gesture_points]  # unpack only the first two values for drawing
+                draw_gesture(self.screen, points)
 
             self.update_score()
             self.check_collisions()
@@ -414,27 +418,25 @@ class SuperDippidBoy:
                     self.main_character.change_movement(angle=0)
 
             elif event.type == MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    print("Left mouse button pressed")
+                if event.button == 1:  # Left mouse button pressed
                     # started to draw gesture
                     self.is_drawing = True
                     self.show_gesture = True
                     self.gesture_points = []  # reset the points
-                elif event.button == 3:
-                    print("Right mouse button pressed")
+
+                # elif event.button == 3:
+                #     print("Right mouse button pressed")
 
             elif event.type == MOUSEBUTTONUP:
-                # gesture finished
+                # gesture finished, try to predict it
                 if event.button == 1:  # if the left mouse button was released
-                    self.is_drawing = False
-                    self.show_gesture = False
-                    predicted_gesture = self.gesture_recognizer.predict_gesture(self.gesture_points)
-                    if predicted_gesture is not None:
-                        self.main_character.set_current_form(predicted_gesture)
+                    self.finish_drawing_gesture()
 
             elif event.type == MOUSEMOTION:
                 if self.is_drawing:
-                    self.gesture_points.append((pygame.mouse.get_pos()))
+                    mouse_pos_x, mouse_pos_y = pygame.mouse.get_pos()
+                    new_point = (mouse_pos_x, mouse_pos_y, self.current_stroke_index)
+                    self.gesture_points.append(new_point)
 
             elif event.type == self.INCREASE_SPEED_EVENT:
                 # increase the movement speed of the obstacles
@@ -446,8 +448,6 @@ class SuperDippidBoy:
 
                 pygame.time.set_timer(self.INCREASE_SPEED_EVENT, 5000, True)
 
-
-
             elif event.type == self.SPAWN_OBSTACLE_EVENT:
                 # create a new obstacle to the right of the current screen whenever our custom event is sent
                 new_obstacle = Obstacle(SCREEN_WIDTH + 20, self.image_handler)
@@ -456,16 +456,23 @@ class SuperDippidBoy:
                 self.gate_collidables.add(*new_obstacle.gates)
                 pygame.time.set_timer(self.SPAWN_OBSTACLE_EVENT, self.interval_time, True)
 
-
             elif event.type == self.UPDATE_SCORE_EVENT:
                 self.current_points += 5
-                pygame.time.set_timer(self.UPDATE_SCORE_EVENT, 1000, True)  # update score each second
+                pygame.time.set_timer(self.UPDATE_SCORE_EVENT, 1000, True)
+
+    def finish_drawing_gesture(self):
+        self.is_drawing = False
+        self.show_gesture = False
+        predicted_gesture = self.gesture_recognizer.predict_gesture(self.gesture_points)
+        if predicted_gesture is not None:
+            self.main_character.set_current_form(predicted_gesture)
+
+        self.current_stroke_index = 0
 
     def check_player_movement(self):
         if "gravity" in self.dippid_sensor.get_capabilities():
             # dippid device is smartphone
             self.main_character.change_movement(angle=self.dippid_sensor.get_value('gravity')[self.dippid_axis])
-        # FIXME: convert angle values to the same range as gravity! (angles are between -180 and 180 -> /18 ?)
         elif "rotation" in self.dippid_sensor.get_capabilities():
             # dippid device is m5stack
             if self.dippid_axis == 'x':
@@ -553,8 +560,6 @@ class SuperDippidBoy:
     #                                 Game end
     # --------------------------------------------------------------------------
 
-    # TODO a restart of the game in the menu leads to random obstacle creation where they can even get stuck in each
-    #  other!
     def return_to_menu(self):
         # stop music
         self.sound_handler.stop_sound()
