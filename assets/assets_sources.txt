@@ -1,0 +1,4 @@
+- Forest Background Image by edermunizz (https://edermunizz.itch.io/free-pixel-art-forest); slightly adjusted & cropped
+- Wooden Material by "yamachem" (https://openclipart.org/detail/226666/flooring-material-02)
+- Mysterious Harp Loop Music by "VWolfdog" (https://opengameart.org/content/soft-mysterious-harp-loop) (not used)
+- Rainy Village Music by "TAD" (https://opengameart.org/content/rainy-village); converted to .wav - format
