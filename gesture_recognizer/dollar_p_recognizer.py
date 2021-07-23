@@ -38,9 +38,7 @@ class DollarPRecognizer:
     NUM_RESAMPLED_POINTS = 32
     GESTURE_FILE_NAME = "gestures.json"
 
-    # TODO not used at the moment because triangle and rectangle are sometimes not recognized very well so we need
-    #  low numbers and there aren't many false positives, so a threshold doesn't really make sense
-    THRESHOLD = 0.3  # threshold at which we reject a gesture prediction as too bad
+    THRESHOLD = 0.3  # threshold at which we reject a gesture prediction as too bad  # TODO 0.45?
 
     def __init__(self):
         self.__gesture_file_path = pathlib.Path("gesture_recognizer") / self.GESTURE_FILE_NAME
@@ -238,8 +236,8 @@ class DollarPRecognizer:
             best_template, score = recognition_result
             print(f"{best_template}   (Score / Probability: {score:.3f})")
             # only change the player form if the score is good enough, if not we keep the current form
-            # if score > self.THRESHOLD:
-            return best_template
+            if score > self.THRESHOLD:
+                return best_template
         else:
             print("Couldn't predict a gesture!")
         return None

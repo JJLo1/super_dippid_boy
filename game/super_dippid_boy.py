@@ -538,7 +538,7 @@ class SuperDippidBoy:
         # Check if any obstacles have collided with the player
         if pygame.sprite.spritecollideany(self.main_character, self.wall_collidables):
             # If so, then remove the player and stop the loop
-            print("Player collided with wall! Game over!")
+            # print("Player collided with wall! Game over!")
             self.main_character.kill()
             self.is_running = False
 

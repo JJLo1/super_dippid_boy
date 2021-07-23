@@ -586,8 +586,6 @@ class SuperDippidBoy:
     #                                 Game end
     # --------------------------------------------------------------------------
 
-    # TODO a restart of the game in the menu leads to random obstacle creation where they can even get stuck in each
-    #  other!
     def return_to_menu(self):
         # stop music
         self.sound_handler.stop_sound()
